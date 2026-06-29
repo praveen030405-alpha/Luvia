@@ -810,6 +810,12 @@
         "</div>";
       refs.messageStream.appendChild(article);
       
+      if (typeof hljs !== 'undefined') {
+        article.querySelectorAll('pre code').forEach(function(block) {
+          hljs.highlightElement(block);
+        });
+      }
+      
       if (typeof renderMathInElement !== 'undefined') {
         renderMathInElement(article, {
           delimiters: [
