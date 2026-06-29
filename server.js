@@ -33,10 +33,31 @@ app.use('/api/', limiter);
 // Serve static frontend files from current directory
 app.use(express.static(__dirname));
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/luvia')
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+// Database connection cache for serverless
+let isConnected;
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/luvia', {
+      serverSelectionTimeoutMS: 5000,
+    });
+    isConnected = db.connections[0].readyState;
+    console.log('✅ Connected to MongoDB');
+  } catch(err) {
+    console.error('❌ MongoDB connection error:', err.message);
+    throw err;
+  }
+};
+
+// Global DB middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch(err) {
+    res.status(500).json({ error: 'Database connection failed: ' + err.message });
+  }
+});
 
 // Initialize Vector Database (Advanced RAG)
 const vectorService = require('./src/backend/services/vector.service');
@@ -68,7 +89,7 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong on the server.' });
+  res.status(500).json({ error: 'Something went wrong on the server: ' + err.message, stack: err.stack });
 });
 
 if (process.env.NODE_ENV !== 'production') {
