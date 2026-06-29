@@ -3,8 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoose = require('mongoose');
-
 // Import Routes
 const authRoutes = require('./src/backend/routes/auth');
 const chatRoutes = require('./src/backend/routes/chat');
@@ -33,31 +31,7 @@ app.use('/api/', limiter);
 // Serve static frontend files from current directory
 app.use(express.static(__dirname));
 
-// Database connection cache for serverless
-let isConnected;
-const connectDB = async () => {
-  if (isConnected) return;
-  try {
-    const db = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/luvia', {
-      serverSelectionTimeoutMS: 5000,
-    });
-    isConnected = db.connections[0].readyState;
-    console.log('✅ Connected to MongoDB');
-  } catch(err) {
-    console.error('❌ MongoDB connection error:', err.message);
-    throw err;
-  }
-};
-
-// Global DB middleware
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch(err) {
-    res.status(500).json({ error: 'Database connection failed: ' + err.message });
-  }
-});
+// Database has been removed - running completely stateless
 
 // Initialize Vector Database (Advanced RAG)
 const vectorService = require('./src/backend/services/vector.service');

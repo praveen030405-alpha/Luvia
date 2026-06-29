@@ -1,7 +1,9 @@
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+// In-memory user store for prototype
+const users = [];
+const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -19,15 +21,14 @@ router.post('/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
     
-    // Find or create user
-    let user = await User.findOne({ email });
+    // Find or create user in-memory
+    let user = users.find(u => u.email === email);
     if (!user) {
-      user = new User({ email, name, picture, googleId });
-      await user.save();
+      user = { _id: generateId(), email, name, picture, googleId };
+      users.push(user);
     } else if (!user.googleId) {
       user.googleId = googleId;
       user.picture = picture;
-      await user.save();
     }
     
     // Issue our own JWT session token
@@ -47,10 +48,10 @@ router.post('/google', async (req, res) => {
 router.post('/guest', async (req, res) => {
   try {
     const { email, name } = req.body;
-    let user = await User.findOne({ email });
+    let user = users.find(u => u.email === email);
     if (!user) {
-      user = new User({ email, name, googleId: 'guest-' + Date.now() });
-      await user.save();
+      user = { _id: generateId(), email, name, googleId: 'guest-' + Date.now() };
+      users.push(user);
     }
     const token = jwt.sign(
       { userId: user._id, email: user.email },

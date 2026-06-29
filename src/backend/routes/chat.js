@@ -1,6 +1,8 @@
 const express = require('express');
 const { authMiddleware } = require('./auth');
-const ChatHistory = require('../models/ChatHistory');
+// In-memory chat store for prototype
+const chats = [];
+const generateId = () => Math.random().toString(36).substr(2, 9);
 const aiService = require('../services/ai.service');
 
 const router = express.Router();
@@ -15,15 +17,18 @@ router.post('/message', async (req, res) => {
     
     let chat;
     if (chatId) {
-      chat = await ChatHistory.findOne({ _id: chatId, userId: req.user.userId });
+      chat = chats.find(c => c._id === chatId && c.userId === req.user.userId);
       if (!chat) return res.status(404).json({ error: 'Chat not found' });
     } else {
-      chat = new ChatHistory({
+      chat = {
+        _id: generateId(),
         userId: req.user.userId,
         title: message.substring(0, 30) + (message.length > 30 ? '...' : ''),
         mode,
-        messages: []
-      });
+        messages: [],
+        updatedAt: new Date()
+      };
+      chats.push(chat);
     }
 
     // Add user message
@@ -37,7 +42,7 @@ router.post('/message', async (req, res) => {
     const assistantMessage = { role: 'assistant', content: aiResponseContent };
     chat.messages.push(assistantMessage);
     
-    await chat.save();
+    chat.updatedAt = new Date();
     
     res.json({
       chatId: chat._id,
@@ -52,10 +57,11 @@ router.post('/message', async (req, res) => {
 // Get chat history list
 router.get('/', async (req, res) => {
   try {
-    const chats = await ChatHistory.find({ userId: req.user.userId })
-      .select('title mode updatedAt')
-      .sort({ updatedAt: -1 });
-    res.json(chats);
+    const userChats = chats
+      .filter(c => c.userId === req.user.userId)
+      .map(c => ({ _id: c._id, title: c.title, mode: c.mode, updatedAt: c.updatedAt }))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    res.json(userChats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch chats' });
   }
@@ -64,7 +70,7 @@ router.get('/', async (req, res) => {
 // Get specific chat
 router.get('/:id', async (req, res) => {
   try {
-    const chat = await ChatHistory.findOne({ _id: req.params.id, userId: req.user.userId });
+    const chat = chats.find(c => c._id === req.params.id && c.userId === req.user.userId);
     if (!chat) return res.status(404).json({ error: 'Chat not found' });
     res.json(chat);
   } catch (error) {

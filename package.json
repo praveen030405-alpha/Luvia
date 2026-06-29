@@ -19,7 +19,6 @@
     "google-auth-library": "^10.9.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.7.3",
     "openai": "^6.45.0"
   }
 }
