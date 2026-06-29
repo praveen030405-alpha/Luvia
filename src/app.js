@@ -210,6 +210,10 @@
       attachButton: $("#attachButton"),
       fileInput: $("#fileInput"),
       voiceButton: $("#voiceButton"),
+      newChatTopBtn: $("#newChatTopBtn"),
+      // Settings
+      systemInstructionInput: $("#systemInstructionInput"),
+      saveSettingsBtn: $("#saveSettingsBtn"),
       imagesView: $("#imagesView"),
       mcqView: $("#mcqView"),
       gemsView: $("#gemsView"),
@@ -439,38 +443,6 @@
 
     refs.chatInput.addEventListener("input", resizeComposer);
 
-    if (refs.voiceButton) {
-      refs.voiceButton.addEventListener("click", function() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-          alert("Speech recognition is not supported in this browser.");
-          return;
-        }
-        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        var recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        
-        refs.voiceButton.style.color = "#ef4444"; // red indicating listening
-        
-        recognition.onresult = function(event) {
-          var speechResult = event.results[0][0].transcript;
-          refs.chatInput.value += (refs.chatInput.value ? " " : "") + speechResult;
-        };
-        
-        recognition.onspeechend = function() {
-          recognition.stop();
-          refs.voiceButton.style.color = "";
-        };
-        
-        recognition.onerror = function(event) {
-          console.error("Speech recognition error:", event.error);
-          refs.voiceButton.style.color = "";
-        };
-        
-        recognition.start();
-      });
-    }
 
     refs.attachMenuBtn.addEventListener("click", function (e) {
       refs.attachDropdown.classList.toggle("hidden");
@@ -504,6 +476,17 @@
         renderAll();
       });
     });
+
+    if (refs.systemInstructionInput && db.settings.systemInstruction) {
+      refs.systemInstructionInput.value = db.settings.systemInstruction;
+    }
+    if (refs.saveSettingsBtn && refs.systemInstructionInput) {
+      refs.saveSettingsBtn.addEventListener("click", function() {
+        db.settings.systemInstruction = refs.systemInstructionInput.value;
+        saveDb();
+        showToast("Settings saved successfully!", "success");
+      });
+    }
   }
 
   function isValidEmail(value) {
@@ -728,21 +711,63 @@
 
     chats.forEach(function (chat) {
       var last = chat.messages[chat.messages.length - 1];
+      
+      var row = document.createElement("div");
+      row.className = "chat-row" + (chat.id === state.activeChatId ? " active" : "");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      
       var button = document.createElement("button");
       button.type = "button";
-      button.className = "chat-row" + (chat.id === state.activeChatId ? " active" : "");
+      button.style.flex = "1";
+      button.style.textAlign = "left";
+      button.style.background = "transparent";
+      button.style.border = "none";
+      button.style.color = "inherit";
+      button.style.padding = "0";
       button.innerHTML =
         "<strong>" +
         escapeHtml(chat.title) +
-        "</strong><span>" +
+        "</strong><span style='display:block; opacity:0.7; font-size:12px;'>" +
         escapeHtml(last ? compactText(last.content, 64) : "Empty conversation") +
         "</span>";
+      
       button.addEventListener("click", function () {
         state.activeChatId = chat.id;
         setView("chat");
         renderAll();
       });
-      refs.chatList.appendChild(button);
+      
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-button";
+      delBtn.style.padding = "4px";
+      delBtn.style.marginLeft = "8px";
+      delBtn.style.opacity = "0.5";
+      delBtn.innerHTML = '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+      delBtn.addEventListener("click", async function (e) {
+        e.stopPropagation();
+        if (!confirm("Delete this chat?")) return;
+        
+        // Remove locally
+        db.chats = db.chats.filter(c => c.id !== chat.id);
+        if (state.activeChatId === chat.id) state.activeChatId = null;
+        saveDb();
+        renderAll();
+        
+        // Remove from backend if synced
+        if (chat._id && localStorage.getItem('luvia_token')) {
+          try {
+            await fetch('/api/chat/' + chat._id, {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + localStorage.getItem('luvia_token') }
+            });
+          } catch(err) { console.error("Failed to delete from server", err); }
+        }
+      });
+      
+      row.appendChild(button);
+      row.appendChild(delBtn);
+      refs.chatList.appendChild(row);
     });
   }
 
@@ -802,6 +827,13 @@
         }, 50);
       } else if (message.content.indexOf("[VISION]") === 0) {
         contentHtml = contentHtml.replace("[VISION]", "<div class='vision-box'><video autoplay playsinline muted></video><canvas></canvas></div>");
+      }
+
+      if (message.role === "assistant") {
+        contentHtml += '<div class="message-actions">' +
+                       '<button class="icon-button tts-btn" type="button" aria-label="Read Aloud" onclick="readAloud(this)" data-text="' + escapeHtml(message.content) + '">' +
+                       '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" width="16" height="16"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' +
+                       '</button></div>';
       }
 
       article.innerHTML =
@@ -903,7 +935,8 @@
             body: JSON.stringify({
               chatId: chat._id || null, // Might be new
               message: prompt,
-              mode: db.settings.modelMode || "fusion"
+              mode: db.settings.modelMode || "fusion",
+              systemInstruction: db.settings.systemInstruction || ""
             })
           });
 
@@ -1746,6 +1779,34 @@
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }).from(element).save();
   }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  
+  // Global TTS handler
+  window.readAloud = function(btn) {
+    if (!('speechSynthesis' in window)) return alert('Text-to-Speech not supported');
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      return;
+    }
+    const text = btn.getAttribute('data-text') || '';
+    // Strip markdown chars roughly
+    const cleanText = text.replace(/[*_#`~]/g, '');
+    const msg = new SpeechSynthesisUtterance(cleanText);
+    msg.lang = 'en-US';
+    msg.rate = 1.0;
+    msg.pitch = 1.0;
+    
+    // Attempt to select a female voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Samantha'));
+    if (femaleVoice) msg.voice = femaleVoice;
+
+    btn.style.color = '#38f2d0';
+    msg.onend = function() { btn.style.color = ''; };
+    msg.onerror = function() { btn.style.color = ''; };
+    window.speechSynthesis.speak(msg);
+  };
 
   document.addEventListener("DOMContentLoaded", function() {
     boot();

@@ -98,7 +98,11 @@ class AIService {
         return await caEngine.chat({ message: caInstruction + "\n\nUser Question: " + userQuery, stream: true });
       } else {
         const chatEngine = new SimpleChatEngine({ memory });
-        return await chatEngine.chat({ message: userQuery, stream: true });
+        let finalQuery = userQuery;
+        if (systemInstruction) {
+           finalQuery = "System Instruction for this conversation: " + systemInstruction + "\n\nUser Question: " + userQuery;
+        }
+        return await chatEngine.chat({ message: finalQuery, stream: true });
       }
     } catch (error) {
       console.error('AI Stream Error:', error);

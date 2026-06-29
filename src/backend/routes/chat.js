@@ -52,16 +52,26 @@ router.post('/message', async (req, res) => {
 // Stream a message (Server-Sent Events)
 router.post('/stream', async (req, res) => {
   try {
-    const { chatId, message, mode = 'fusion' } = req.body;
+    const { chatId, message, mode = 'fusion', systemInstruction = '' } = req.body;
     
     let chat;
     if (chatId) {
       chat = await Chat.findOne({ _id: chatId, userId: req.user.userId });
       if (!chat) return res.status(404).json({ error: 'Chat not found' });
     } else {
+      // Auto-generate title
+      let title = "New Chat";
+      try {
+        const titlePrompt = `Generate a very short 2-3 word title for this message: "${message.substring(0, 50)}". Return ONLY the title, no quotes.`;
+        title = await aiService.generateResponse([{role: 'user', content: titlePrompt}], 'fusion');
+        title = title.replace(/['"]/g, '').trim();
+      } catch(e) {
+        title = message.substring(0, 25) + '...';
+      }
+
       chat = new Chat({
         userId: req.user.userId,
-        title: message.substring(0, 30) + (message.length > 30 ? '...' : ''),
+        title: title,
         mode,
         messages: []
       });
@@ -79,7 +89,7 @@ router.post('/stream', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type: 'init', chatId: chat._id })}\n\n`);
 
     const formattedMessages = chat.messages.map(m => ({ role: m.role, content: m.content }));
-    const stream = await aiService.generateStream(formattedMessages, chat.mode);
+    const stream = await aiService.generateStream(formattedMessages, chat.mode, systemInstruction);
     
     let fullContent = "";
     for await (const chunk of stream) {
@@ -126,6 +136,17 @@ router.get('/:id', async (req, res) => {
     res.json(chat);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+});
+
+// Delete a chat
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!deleted) return res.status(404).json({ error: 'Chat not found' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete chat' });
   }
 });
 

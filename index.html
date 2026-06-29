@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- <script src="https://accounts.google.com/gsi/client"></script> -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -363,9 +363,15 @@
           </section>
           <section id="settingsView" class="view glass-modal" aria-label="Settings workspace">
             <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <div style="padding: 60px 20px; color: white;">
-              <h2>Settings</h2>
-              <p>System configuration coming soon.</p>
+            <div style="padding: 60px 20px; max-width: 600px; margin: 0 auto; color: white;">
+              <h2 style="font-size: 28px; font-weight: 300; margin-bottom: 32px;">Luvia Settings</h2>
+              
+              <div style="margin-bottom: 24px;">
+                <label style="display:block; font-size: 14px; font-weight: 600; color: #a78bfa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Custom Personality</label>
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 16px;">Give Luvia specific system instructions on how to behave, respond, or format answers.</p>
+                <textarea id="systemInstructionInput" placeholder="e.g. You are a strict Chartered Accountant tutor. Do not give the answers directly, but instead guide the user to find them..." rows="5" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; color: #e2e8f0; font-family: 'Outfit', sans-serif; resize: vertical; margin-bottom: 16px;"></textarea>
+                <button id="saveSettingsBtn" style="background: linear-gradient(90deg, #38f2d0, #34d399); color: #020617; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;">Save Instructions</button>
+              </div>
             </div>
           </section>
           <section id="cameraView" class="view glass-modal" aria-label="Camera workspace">
