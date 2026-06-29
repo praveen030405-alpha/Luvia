@@ -1,4 +1,5 @@
-const { VectorStoreIndex, Document, Settings, GeminiEmbedding } = require('llamaindex');
+const { VectorStoreIndex, Document, Settings } = require('llamaindex');
+const { GeminiEmbedding } = require('@llamaindex/google');
 
 class VectorService {
   constructor() {

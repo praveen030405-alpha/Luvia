@@ -1,4 +1,5 @@
-const { Gemini, ChatMemoryBuffer, SimpleChatEngine, Settings, ChatMessage } = require('llamaindex');
+const { ChatMemoryBuffer, SimpleChatEngine, Settings, ChatMessage } = require('llamaindex');
+const { Gemini } = require('@llamaindex/google');
 
 class AIService {
   constructor() {

@@ -716,6 +716,16 @@
       row.className = "chat-row" + (chat.id === state.activeChatId ? " active" : "");
       row.style.display = "flex";
       row.style.alignItems = "center";
+      row.style.padding = "8px 12px";
+      row.style.margin = "4px 8px";
+      row.style.borderRadius = "8px";
+      row.style.cursor = "pointer";
+      row.style.transition = "background-color 0.2s";
+      if (chat.id === state.activeChatId) {
+        row.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+      }
+      row.onmouseover = () => { if (chat.id !== state.activeChatId) row.style.backgroundColor = "rgba(255, 255, 255, 0.05)"; };
+      row.onmouseout = () => { if (chat.id !== state.activeChatId) row.style.backgroundColor = "transparent"; };
       
       var button = document.createElement("button");
       button.type = "button";
@@ -725,12 +735,12 @@
       button.style.border = "none";
       button.style.color = "inherit";
       button.style.padding = "0";
-      button.innerHTML =
-        "<strong>" +
-        escapeHtml(chat.title) +
-        "</strong><span style='display:block; opacity:0.7; font-size:12px;'>" +
-        escapeHtml(last ? compactText(last.content, 64) : "Empty conversation") +
-        "</span>";
+      button.style.fontFamily = "inherit";
+      button.style.fontSize = "14px";
+      button.style.overflow = "hidden";
+      button.style.textOverflow = "ellipsis";
+      button.style.whiteSpace = "nowrap";
+      button.innerHTML = escapeHtml(chat.title);
       
       button.addEventListener("click", function () {
         state.activeChatId = chat.id;
