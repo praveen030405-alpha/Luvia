@@ -87,17 +87,17 @@ svg {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(circle at 16% 18%, rgba(59, 130, 246, 0.1), transparent 35%),
-    radial-gradient(circle at 84% 14%, rgba(168, 85, 247, 0.08), transparent 32%),
-    radial-gradient(circle at 64% 88%, rgba(99, 102, 241, 0.06), transparent 40%);
+    radial-gradient(circle at 16% 18%, rgba(29, 78, 216, 0.15), transparent 35%),
+    radial-gradient(circle at 84% 14%, rgba(124, 58, 237, 0.1), transparent 32%),
+    radial-gradient(circle at 64% 88%, rgba(67, 56, 202, 0.08), transparent 40%);
   transition: opacity 1.5s ease;
 }
 
 body.aurora-thinking .aurora-field {
   background:
-    radial-gradient(circle at 16% 18%, rgba(59, 130, 246, 0.2), transparent 40%),
-    radial-gradient(circle at 84% 14%, rgba(168, 85, 247, 0.15), transparent 36%),
-    radial-gradient(circle at 64% 88%, rgba(99, 102, 241, 0.12), transparent 45%);
+    radial-gradient(circle at 16% 18%, rgba(29, 78, 216, 0.25), transparent 40%),
+    radial-gradient(circle at 84% 14%, rgba(124, 58, 237, 0.2), transparent 36%),
+    radial-gradient(circle at 64% 88%, rgba(67, 56, 202, 0.15), transparent 45%);
 }
 
 .aurora-band {
@@ -116,22 +116,22 @@ body.aurora-thinking .aurora-band {
 }
 
 .band-one {
-  left: -20vw;
+  left: -10vw;
   top: 5vh;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.35), transparent);
 }
 
 .band-two {
-  right: -30vw;
+  right: -15vw;
   top: 25vh;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
   animation-delay: -4s;
 }
 
 .band-three {
   left: 15vw;
   bottom: -25vh;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.25), transparent);
   animation-delay: -8s;
 }
 
@@ -341,16 +341,32 @@ select:focus,
   height: 100vh;
   padding: 12px;
   display: grid;
-  grid-template-columns: var(--sidebar) 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  position: relative;
 }
 
 .sidebar {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
+  width: var(--sidebar);
+  z-index: 100;
+  transform: translateX(calc(-100% - 24px));
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(10, 12, 16, 0.85);
+  backdrop-filter: blur(40px);
+  border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
+  padding: 16px;
   border-radius: var(--radius);
-  padding: 12px;
   overflow: hidden;
+  box-shadow: 0 10px 50px rgba(0,0,0,0.6);
+}
+
+.sidebar.open {
+  transform: translateX(0);
 }
 
 .sidebar-title {
@@ -379,10 +395,20 @@ select:focus,
 
 .chat-row.active { background: var(--panel-strong); color: var(--text); }
 
+.view {
+  display: none;
+  min-height: 0;
+}
+
+.active-view {
+  display: grid;
+}
+
 .main-stage {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
 }
 
 .topbar {
@@ -426,6 +452,8 @@ select:focus,
   align-self: flex-start;
   border-bottom-left-radius: 4px;
   border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
 }
 
 .thinking {
