@@ -455,11 +455,41 @@ select:focus,
   text-overflow: ellipsis;
 }
 
-/* ======================== */
-/* Main Stage               */
-/* ======================== */
-.view { display: none; min-height: 0; }
-.active-view { display: grid; }
+/* ==========================================================================
+   Views & Routing
+   ========================================================================== */
+.view {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+}
+.view.active-view {
+  display: flex;
+}
+
+/* Glass Modal Views (Full Screen Overlays) */
+.view.glass-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: rgba(10, 10, 20, 0.6);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.view.glass-modal.active-view {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .main-stage {
   min-width: 0;

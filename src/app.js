@@ -390,6 +390,7 @@
       saveDb();
       renderAll();
       refs.chatInput.focus();
+      document.getElementById('sidebar').classList.remove('open');
     });
 
     refs.searchToggle.addEventListener("click", function () {
@@ -404,6 +405,12 @@
     });
 
     $all("[data-view]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        setView(button.dataset.view);
+      });
+    });
+
+    $all(".close-modal-btn").forEach(function (button) {
       button.addEventListener("click", function () {
         setView(button.dataset.view);
       });
@@ -716,11 +723,8 @@
     greetingDiv.className = "empty-state gemini-empty";
     greetingDiv.innerHTML =
       '<div class="empty-state-inner">' +
-      '<div class="gemini-star-logo">' +
-      '<svg viewBox="0 0 24 24" width="52" height="52"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" fill="url(#star-grad-main)"/></svg>' +
-      '<svg width="0" height="0"><defs><linearGradient id="star-grad-main" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38f2d0"/><stop offset="50%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#f472b6"/></linearGradient></defs></svg>' +
-      '</div>' +
-      '<h3 class="gemini-greeting">Hi ' + escapeHtml(firstName) + ', let\'s get into it</h3>' +
+      '<div class="aurora-ball" style="width: 52px; height: 52px; margin: 0 auto 16px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #38f2d0, #a78bfa 50%, #f472b6); box-shadow: 0 0 20px rgba(167, 139, 250, 0.6), inset -2px -2px 6px rgba(0,0,0,0.4);"></div>' +
+      '<h3 class="gemini-greeting" style="font-weight: 300; font-size: 24px; color: #e2e8f0;">Hi ' + escapeHtml(firstName) + ', let\'s get into it</h3>' +
       '</div>';
 
     // If no messages yet, just show the greeting centered
@@ -882,6 +886,14 @@
             // Start typewriter effect
             typeWriter(newMsg, data.message.content, chat);
             return; // typeWriter will handle the final save and render
+          } else if (data.error) {
+            chat.messages.push({
+              id: uid("msg"),
+              role: "assistant",
+              content: "Error: " + data.error + (data.details ? "\n" + data.details : ""),
+              createdAt: new Date().toISOString(),
+              meta: "System"
+            });
           }
         } else {
           chat.messages.push({
