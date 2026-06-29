@@ -1,76 +1,84 @@
 require('dotenv').config();
+
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-// Import Routes
+const mongoose = require('mongoose');
+
 const authRoutes = require('./src/backend/routes/auth');
 const chatRoutes = require('./src/backend/routes/chat');
-// Other routes removed for prototype
+const gemRoutes = require('./src/backend/routes/gems');
+const workspaceRoutes = require('./src/backend/routes/workspace');
+const { isMongoReady } = require('./src/backend/utils/db');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security & Middleware
+app.disable('x-powered-by');
+
 app.use(helmet({
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-  contentSecurityPolicy: false // Disabled for prototype to allow external CDNs (TensorFlow, Chart.js, Google Auth)
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: false
 }));
-app.use(cors({ origin: '*', credentials: false })); // Allow all origins so local file:// testing works
-app.use(express.json());
+app.use(cors({ origin: true, credentials: false }));
+app.use(express.json({ limit: '2mb' }));
 
-// Rate Limiting removed for prototype stability
+async function connectMongo() {
+  if (!process.env.MONGODB_URI) {
+    console.warn('MongoDB URI is not configured; using local memory storage.');
+    return;
+  }
 
-// Serve static frontend files from current directory
-app.use(express.static(__dirname));
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000
+    });
+    console.log('Connected to MongoDB.');
+  } catch (error) {
+    console.warn('MongoDB unavailable; using local memory storage. ' + error.message);
+  }
+}
 
-// Database Connection
-const mongoose = require('mongoose');
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
-}).then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+connectMongo();
 
-// Initialize Vector Database (Advanced RAG)
-const vectorService = require('./src/backend/services/vector.service');
-const caSyllabus = require('./src/backend/data/ca_syllabus_mock');
-// Disable auto-indexing on cold start for Vercel compatibility
-// (async () => {
-//   try {
-//     console.log('📚 Indexing CA Syllabus into Vector Database...');
-//     for (const doc of caSyllabus) {
-//       await vectorService.indexDocument(doc.id, doc.text, doc.metadata);
-//     }
-//     console.log('✅ Vector Database Ready! Indexed ' + caSyllabus.length + ' CA documents.');
-//   } catch (err) {
-//     console.error('❌ Failed to index vectors:', err);
-//   }
-// })();
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);
-// Unused routes removed for prototype
-
-// Fallback for frontend routing (if using SPA)
-app.use((req, res) => {
-  res.sendFile(__dirname + '/index.html');
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    aiProvider: 'gemini',
+    storage: isMongoReady() ? 'mongodb' : 'memory',
+    geminiConfigured: Boolean(process.env.GEMINI_API_KEY || process.env.Gemini_API_key || process.env.GOOGLE_API_KEY)
+  });
 });
 
-// Global Error Handler
+app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/gems', gemRoutes);
+app.use('/api/workspace', workspaceRoutes);
+
+app.use(express.static(__dirname));
+
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API route not found' });
+});
+
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Something went wrong on the server.' });
 });
 
-if (process.env.NODE_ENV !== 'production') {
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 Luvia server running on http://localhost:${PORT}`);
+    console.log('Luvia server running on http://localhost:' + PORT);
   });
 }
 
-// Catch unhandled rejections to prevent Vercel from crashing completely
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// Export for Vercel Serverless
 module.exports = app;

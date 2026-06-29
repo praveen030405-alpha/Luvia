@@ -1,42 +1,54 @@
-const { VectorStoreIndex, Document, Settings } = require('llamaindex');
-const { GeminiEmbedding } = require('@llamaindex/google');
-
 class VectorService {
   constructor() {
-    let geminiKey = process.env.GEMINI_API_KEY || 'dummy_key';
-    
-    // Set the global embedding model to Gemini
-    Settings.embedModel = new GeminiEmbedding({
-      model: 'models/text-embedding-004',
-      apiKey: geminiKey
-    });
-
-    this.index = null;
     this.documents = [];
+    this.seedDocuments();
   }
 
-  // Index a document into the in-memory store
+  seedDocuments() {
+    try {
+      const syllabus = require('../data/ca_syllabus_mock');
+      syllabus.forEach((doc) => {
+        this.documents.push({
+          id: doc.id,
+          text: doc.text,
+          metadata: doc.metadata || {}
+        });
+      });
+    } catch (error) {
+      this.documents = [];
+    }
+  }
+
+  tokenize(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((token) => token.length > 2);
+  }
+
   async indexDocument(id, text, metadata = {}) {
-    const doc = new Document({ text, metadata: { id, ...metadata } });
-    this.documents.push(doc);
-    
-    // Rebuild index (for a small dataset, this is fast enough)
-    this.index = await VectorStoreIndex.fromDocuments(this.documents);
+    this.documents.push({ id: id, text: text, metadata: Object.assign({ id: id }, metadata) });
     return true;
   }
 
-  // Search the vector store
   async search(queryText, topK = 3) {
-    if (!this.index) return [];
-    
-    const retriever = this.index.asRetriever({ similarityTopK: topK });
-    const results = await retriever.retrieve({ query: queryText });
+    const queryTokens = new Set(this.tokenize(queryText));
+    if (!queryTokens.size) return this.documents.slice(0, topK);
 
-    return results.map(nodeWithScore => ({
-      text: nodeWithScore.node.text,
-      metadata: nodeWithScore.node.metadata,
-      score: nodeWithScore.score
-    }));
+    return this.documents
+      .map((doc) => {
+        const textTokens = this.tokenize(doc.text + ' ' + JSON.stringify(doc.metadata || {}));
+        const score = textTokens.reduce((total, token) => total + (queryTokens.has(token) ? 1 : 0), 0);
+        return {
+          text: doc.text,
+          metadata: doc.metadata,
+          score: score
+        };
+      })
+      .filter((doc) => doc.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
   }
 }
 

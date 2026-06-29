@@ -1,112 +1,116 @@
-const { ChatMemoryBuffer, SimpleChatEngine, Settings, ChatMessage } = require('llamaindex');
-const { Gemini } = require('@llamaindex/google');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const MODELS = {
+  fast: process.env.GEMINI_FAST_MODEL || 'gemini-3.1-flash-lite',
+  fusion: process.env.GEMINI_FUSION_MODEL || 'gemini-3.5-flash',
+  reasoning: process.env.GEMINI_REASONING_MODEL || 'gemini-2.5-pro',
+  max: process.env.GEMINI_MAX_MODEL || 'gemini-2.5-pro',
+  ca: process.env.GEMINI_CA_MODEL || 'gemini-3.5-flash'
+};
 
 class AIService {
   constructor() {
-    let geminiKey = process.env.GEMINI_API_KEY || process.env.Gemini_API_key;
-    if (!geminiKey) {
-      try {
-        const keys = require('../luvia-keys.json');
-        geminiKey = keys.GEMINI_API_KEY;
-      } catch(e) {}
-    }
-    geminiKey = (geminiKey || 'dummy_key').trim();
-    
-    // Set global LLM in LlamaIndex to use Gemini
-    Settings.llm = new Gemini({
-      apiKey: geminiKey,
-      model: 'gemini-2.5-flash',
-    });
-    this.apiKey = geminiKey;
+    this.apiKey = this.resolveApiKey();
+    this.client = this.apiKey ? new GoogleGenerativeAI(this.apiKey) : null;
   }
 
-  /**
-   * Generates a response using the appropriate model based on the mode.
-   * Modes: fusion, reasoning, fast, ca (Specialized Prompt)
-   */
+  resolveApiKey() {
+    return String(
+      process.env.GEMINI_API_KEY ||
+      process.env.Gemini_API_key ||
+      process.env.GOOGLE_API_KEY ||
+      ''
+    ).trim();
+  }
+
+  ensureClient() {
+    if (!this.apiKey || !this.client) {
+      throw new Error('Gemini API key is not configured. Set GEMINI_API_KEY in your environment.');
+    }
+    return this.client;
+  }
+
+  modelForMode(mode) {
+    return MODELS[mode] || MODELS.fusion;
+  }
+
+  async getModel(mode, systemInstruction = '') {
+    return this.ensureClient().getGenerativeModel({
+      model: this.modelForMode(mode),
+      systemInstruction: this.buildSystemInstruction(mode, systemInstruction)
+    });
+  }
+
+  buildSystemInstruction(mode, systemInstruction = '') {
+    const base = [
+      'You are Luvia, a polished AI workspace assistant.',
+      'Answer clearly, use markdown when useful, and keep the tone focused and practical.',
+      'When solving CA, tax, audit, accounting, finance, math, or code questions, show the reasoning structure without fabricating citations.'
+    ];
+
+    if (mode === 'fast') base.push('Prioritize concise answers and quick next steps.');
+    if (mode === 'reasoning' || mode === 'max') base.push('Use deeper analysis and check assumptions before final recommendations.');
+    if (mode === 'ca') base.push('Act as a careful Chartered Accountant study tutor. Use the supplied reference material when present.');
+    if (systemInstruction) base.push('User custom instruction: ' + systemInstruction);
+
+    return base.join('\n');
+  }
+
+  async buildPrompt(messages, mode) {
+    const safeMessages = Array.isArray(messages) ? messages : [];
+    const transcript = safeMessages
+      .filter((message) => message && message.content)
+      .map((message) => (message.role === 'assistant' ? 'Assistant' : 'User') + ': ' + message.content)
+      .join('\n\n');
+
+    if (mode !== 'ca') return transcript;
+
+    const latest = safeMessages.length ? safeMessages[safeMessages.length - 1].content : '';
+    const vectorService = require('./vector.service');
+    const relevantDocs = await vectorService.search(latest, 3);
+    if (!relevantDocs.length) return transcript;
+
+    const referenceBlock = relevantDocs
+      .map((doc, index) => {
+        const source = (doc.metadata && (doc.metadata.source || doc.metadata.chapter)) || 'Reference ' + (index + 1);
+        return '- ' + source + ': ' + doc.text;
+      })
+      .join('\n');
+
+    return 'Verified reference material:\n' + referenceBlock + '\n\nConversation:\n' + transcript;
+  }
+
+  extractText(response) {
+    if (!response) return '';
+    if (typeof response.text === 'function') return response.text();
+    if (response.response && typeof response.response.text === 'function') return response.response.text();
+    return String(response.text || response.content || '').trim();
+  }
+
   async generateResponse(messages, mode = 'fusion', systemInstruction = '') {
     try {
-      // Map basic messages to LlamaIndex format
-      const chatHistory = messages.map(msg => ({
-        content: msg.content,
-        role: msg.role === 'assistant' ? 'assistant' : 'user'
-      }));
-
-      // Pop the latest query
-      const userQuery = chatHistory.pop().content;
-
-      // Keep token count tightly constrained for memory stability
-      const memory = new ChatMemoryBuffer({
-        tokenLimit: 4000,
-        chatHistory: chatHistory
-      });
-
-      if (mode === 'ca') {
-        const vectorService = require('./vector.service');
-        const relevantDocs = await vectorService.search(userQuery, 2);
-        
-        let retrievedContext = '';
-        if (relevantDocs.length > 0) {
-          retrievedContext = '\n\nVerified Reference Material:\n' + relevantDocs.map(d => `- [${d.metadata.source || 'Doc'}]: ${d.text}`).join('\n');
-        }
-
-        const caInstruction = "You are an expert in the Chartered Accountant (CA) syllabus. Use the provided Verified Reference Material to answer the user's question accurately. " + systemInstruction + retrievedContext;
-        
-        // Pass instruction dynamically
-        const caEngine = new SimpleChatEngine({
-          memory,
-          llm: new Gemini({ apiKey: this.apiKey, model: 'gemini-2.5-flash' })
-        });
-        
-        // Provide the instruction as context
-        const response = await caEngine.chat({ message: caInstruction + "\n\nUser Question: " + userQuery });
-        return response.message.content;
-      } else {
-        // Standard chat engine using LlamaIndex
-        const chatEngine = new SimpleChatEngine({ memory });
-        const response = await chatEngine.chat({ message: userQuery });
-        return response.message.content;
-      }
+      const model = await this.getModel(mode, systemInstruction);
+      const prompt = await this.buildPrompt(messages, mode);
+      const result = await model.generateContent(prompt);
+      return this.extractText(result.response) || 'I could not produce a response for that request.';
     } catch (error) {
-      console.error('AI Service Detailed Error:', error.message, error.stack);
+      console.error('AI Service Error:', error.message);
       throw error;
     }
   }
 
-  async generateStream(messages, mode = 'fusion', systemInstruction = '') {
+  async *generateStream(messages, mode = 'fusion', systemInstruction = '') {
     try {
-      const chatHistory = messages.map(msg => ({
-        content: msg.content,
-        role: msg.role === 'assistant' ? 'assistant' : 'user'
-      }));
-      const userQuery = chatHistory.pop().content;
-      const memory = new ChatMemoryBuffer({ tokenLimit: 4000, chatHistory });
+      const model = await this.getModel(mode, systemInstruction);
+      const prompt = await this.buildPrompt(messages, mode);
+      const result = await model.generateContentStream(prompt);
 
-      if (mode === 'ca') {
-        const vectorService = require('./vector.service');
-        const relevantDocs = await vectorService.search(userQuery, 2);
-        let retrievedContext = '';
-        if (relevantDocs.length > 0) {
-          retrievedContext = '\n\nVerified Reference Material:\n' + relevantDocs.map(d => `- [${d.metadata.source || 'Doc'}]: ${d.text}`).join('\n');
-        }
-        const caInstruction = "You are an expert in the Chartered Accountant (CA) syllabus. Use the provided Verified Reference Material to answer the user's question accurately. " + systemInstruction + retrievedContext;
-        
-        const caEngine = new SimpleChatEngine({
-          memory,
-          llm: new Gemini({ apiKey: this.apiKey, model: 'gemini-2.5-flash' })
-        });
-        
-        return await caEngine.chat({ message: caInstruction + "\n\nUser Question: " + userQuery, stream: true });
-      } else {
-        const chatEngine = new SimpleChatEngine({ memory });
-        let finalQuery = userQuery;
-        if (systemInstruction) {
-           finalQuery = "System Instruction for this conversation: " + systemInstruction + "\n\nUser Question: " + userQuery;
-        }
-        return await chatEngine.chat({ message: finalQuery, stream: true });
+      for await (const chunk of result.stream) {
+        const text = this.extractText(chunk);
+        if (text) yield text;
       }
     } catch (error) {
-      console.error('AI Stream Error:', error);
+      console.error('AI Stream Error:', error.message);
       throw error;
     }
   }

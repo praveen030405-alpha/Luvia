@@ -496,6 +496,59 @@
         showToast("Settings saved successfully!", "success");
       });
     }
+
+    // Command Palette Logic
+    var commandPalette = $("#commandPalette");
+    var commandInput = $("#commandInput");
+    if (commandPalette && commandInput) {
+      document.addEventListener("keydown", function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+          e.preventDefault();
+          commandPalette.classList.toggle("hidden");
+          if (!commandPalette.classList.contains("hidden")) {
+            commandInput.focus();
+            commandInput.value = "";
+            $all(".command-option").forEach(opt => opt.style.display = "flex");
+          }
+        }
+        if (e.key === "Escape" && !commandPalette.classList.contains("hidden")) {
+          commandPalette.classList.add("hidden");
+        }
+      });
+      
+      commandPalette.addEventListener("click", function(e) {
+        if (e.target.classList.contains("command-palette-backdrop")) {
+          commandPalette.classList.add("hidden");
+        }
+      });
+
+      commandInput.addEventListener("input", function() {
+        var term = this.value.toLowerCase();
+        $all(".command-option").forEach(function(btn) {
+          var text = btn.innerText.toLowerCase();
+          btn.style.display = text.includes(term) ? "flex" : "none";
+        });
+      });
+
+      $all(".command-option").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          var action = this.dataset.action;
+          commandPalette.classList.add("hidden");
+          if (action === "new-chat") {
+            if (refs.newChatButton) refs.newChatButton.click();
+          } else if (action === "clear-history") {
+            if (confirm("Clear all local chat history?")) {
+              db.chats = [];
+              state.activeChatId = null;
+              saveDb();
+              openWorkspace();
+            }
+          } else if (action === "settings") {
+            setView("settings");
+          }
+        });
+      });
+    }
   }
 
   function isValidEmail(value) {
@@ -946,8 +999,9 @@
       createdAt: now,
       meta: "You"
     });
-    if (chat.title === "New conversation" || chat.title === "Welcome to Luvia") {
-      chat.title = compactText(prompt, 42);
+    if (chat.title === "New Session" || chat.title === "New conversation" || chat.title === "Welcome to Luvia") {
+      var words = prompt.split(" ").slice(0, 4).join(" ");
+      chat.title = words + (prompt.split(" ").length > 4 ? "..." : "");
     }
     chat.updatedAt = now;
     saveDb();

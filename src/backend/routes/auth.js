@@ -2,82 +2,112 @@ const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const memoryStore = require('../services/memory-store');
+const { isMongoReady } = require('../utils/db');
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+function publicUser(user) {
+  return {
+    id: String(user._id || user.id),
+    name: user.name,
+    email: user.email,
+    picture: user.picture || ''
+  };
+}
+
+function issueToken(user) {
+  return jwt.sign(
+    { userId: String(user._id || user.id), email: user.email },
+    process.env.JWT_SECRET || 'fallback_secret',
+    { expiresIn: '7d' }
+  );
+}
+
+async function upsertUser(input) {
+  const email = String(input.email || '').trim().toLowerCase();
+  if (!email) throw new Error('Email is required');
+
+  if (!isMongoReady()) {
+    return memoryStore.upsertUser(Object.assign({}, input, { email: email }));
+  }
+
+  let user = await User.findOne({ email: email });
+  if (!user) {
+    user = new User({
+      email: email,
+      name: input.name || email.split('@')[0],
+      picture: input.picture || '',
+      googleId: input.googleId || ''
+    });
+    await user.save();
+    return user;
+  }
+
+  user.name = input.name || user.name;
+  user.picture = input.picture || user.picture;
+  user.googleId = input.googleId || user.googleId;
+  await user.save();
+  return user;
+}
+
 router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body;
-    
-    // Verify the Google JWT
+    if (!credential) return res.status(400).json({ error: 'Google credential is required' });
+
     const ticket = await client.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: process.env.GOOGLE_CLIENT_ID
     });
-    
+
     const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture } = payload;
-    
-    // Find or create user in DB
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = new User({ email, name, picture, googleId });
-      await user.save();
-    } else if (!user.googleId) {
-      user.googleId = googleId;
-      user.picture = picture;
-      await user.save();
-    }
-    
-    // Issue our own JWT session token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '7d' }
-    );
-    
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, picture: user.picture } });
+    const user = await upsertUser({
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      googleId: payload.sub
+    });
+
+    res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) {
-    console.error('Google Auth Error:', error);
+    console.error('Google Auth Error:', error.message);
     res.status(401).json({ error: 'Invalid Google token' });
   }
 });
 
 router.post('/guest', async (req, res) => {
   try {
-    const { email, name } = req.body;
-    let user = await User.findOne({ email });
-    if (!user) {
-      user = new User({ email, name, googleId: 'guest-' + Date.now() });
-      await user.save();
-    }
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '7d' }
-    );
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const name = String(req.body.name || '').trim() || email.split('@')[0];
+    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email is required' });
+
+    const user = await upsertUser({
+      email: email,
+      name: name,
+      googleId: 'guest-' + email
+    });
+
+    res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (error) {
-    console.error('Guest Auth Error:', error);
+    console.error('Guest Auth Error:', error.message);
     res.status(500).json({ error: 'Failed to authenticate guest' });
   }
 });
 
-
-// Middleware to protect routes
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    req.user = decoded;
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    req.user.userId = String(req.user.userId);
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
   }
-};
+}
 
 module.exports = router;
 module.exports.authMiddleware = authMiddleware;
