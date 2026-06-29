@@ -205,6 +205,8 @@
       chatInput: $("#chatInput"),
       smartSuggestions: $("#smartSuggestions"),
       cameraButton: $("#cameraButton"),
+      attachMenuBtn: $("#attachMenuBtn"),
+      attachDropdown: $("#attachDropdown"),
       attachButton: $("#attachButton"),
       fileInput: $("#fileInput"),
       voiceButton: $("#voiceButton"),
@@ -430,8 +432,23 @@
 
     refs.chatInput.addEventListener("input", resizeComposer);
 
+    refs.attachMenuBtn.addEventListener("click", function (e) {
+      refs.attachDropdown.classList.toggle("hidden");
+      e.stopPropagation();
+    });
+
+    document.addEventListener("click", function () {
+      refs.attachDropdown.classList.add("hidden");
+    });
+
     refs.attachButton.addEventListener("click", function () {
+      refs.attachDropdown.classList.add("hidden");
       refs.fileInput.click();
+    });
+
+    refs.cameraButton.addEventListener("click", function () {
+      refs.attachDropdown.classList.add("hidden");
+      alert("Camera API would launch here.");
     });
 
     refs.fileInput.addEventListener("change", handleFileAttachment);
@@ -711,12 +728,6 @@
       refs.messageStream.appendChild(greetingDiv);
       return;
     }
-
-    // Show greeting in a compact top banner when there are messages
-    greetingDiv.style.cssText = 'padding-bottom: 0; min-height: auto; margin-bottom: 16px; opacity: 0.6; transform: scale(0.85); transform-origin: top center;';
-    greetingDiv.querySelector('.gemini-greeting').style.cssText = 'font-size: clamp(16px, 2vw, 24px); animation: none; background: linear-gradient(135deg, #e2e8f6, #38f2d0 50%, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent;';
-    greetingDiv.querySelector('.gemini-star-logo').style.cssText = 'margin-bottom: 8px; animation: floatStar 3.5s ease-in-out infinite;';
-    refs.messageStream.appendChild(greetingDiv);
 
     chat.messages.forEach(function (message) {
       var article = document.createElement("article");
