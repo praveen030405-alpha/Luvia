@@ -170,6 +170,14 @@
   }
 
   function boot() {
+    if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+      marked.setOptions({
+        highlight: function(code, lang) {
+          const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+          return hljs.highlight(code, { language }).value;
+        }
+      });
+    }
     refs = {
       splash: $("#splash"),
       authScreen: $("#authScreen"),
@@ -384,8 +392,8 @@
       });
     }
 
-    refs.newChatButton.addEventListener("click", function () {
-      var chat = createChat();
+    function startNewChat() {
+      var chat = createChat("New Session");
       state.activeChatId = chat.id;
       setView("chat");
       saveDb();
@@ -393,7 +401,12 @@
       refs.chatInput.focus();
       var sidebar = $(".sidebar");
       if (sidebar) sidebar.classList.remove("open");
-    });
+    }
+
+    refs.newChatButton.addEventListener("click", startNewChat);
+    if (refs.newChatTopBtn) {
+      refs.newChatTopBtn.addEventListener("click", startNewChat);
+    }
 
     refs.searchToggle.addEventListener("click", function () {
       state.searchOpen = !state.searchOpen;
@@ -628,10 +641,11 @@
   function openWorkspace() {
     refs.authScreen.classList.add("hidden");
     refs.workspace.classList.remove("hidden");
-    if (!db.chats.length) {
-      var freshChat = createChat("New Session");
-      state.activeChatId = freshChat.id;
-    }
+    
+    // Always load a new session each time the user refreshes/opens the app
+    var freshChat = createChat("New Session");
+    state.activeChatId = freshChat.id;
+    
     ensureChat();
     saveDb();
     syncModelDropdown();
@@ -765,6 +779,8 @@
       
       button.addEventListener("click", function () {
         state.activeChatId = chat.id;
+        var sidebar = $(".sidebar");
+        if (sidebar) sidebar.classList.remove("open");
         setView("chat");
         renderAll();
       });
@@ -1832,13 +1848,17 @@
     const cleanText = text.replace(/[*_#`~]/g, '');
     const msg = new SpeechSynthesisUtterance(cleanText);
     msg.lang = 'en-US';
-    msg.rate = 1.0;
-    msg.pitch = 1.0;
+    msg.rate = 1.1;
+    msg.pitch = 1.6;
     
     // Attempt to select a female voice if available
     const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Google UK English Female') || v.name.includes('Samantha'));
-    if (femaleVoice) msg.voice = femaleVoice;
+    const femaleVoice = voices.find(v => /female|samantha|zira|susan|victoria/i.test(v.name));
+    if (femaleVoice) {
+      msg.voice = femaleVoice;
+    } else {
+      msg.pitch = 1.8; // Fallback to higher pitch if no female voice found
+    }
 
     btn.style.color = '#38f2d0';
     msg.onend = function() { btn.style.color = ''; };
