@@ -1,0 +1,21 @@
+# Flutter directories
+/android
+/ios
+/linux
+/macos
+/windows
+/web
+/build
+/lib
+/test
+
+# Dart
+.dart_tool/
+.packages
+pubspec.lock
+pubspec.yaml
+*.dart
+
+# Node
+node_modules
+.npm
