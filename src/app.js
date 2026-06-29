@@ -232,15 +232,11 @@
 
     bindEvents();
 
-    // Bypass login page completely
-    db.user = {
-      name: "Praveen",
-      email: "user@example.com",
-      provider: "local",
-      lastLogin: new Date().toISOString()
-    };
-    
-    openWorkspace();
+    if (db.user && localStorage.getItem("luvia_token")) {
+      openWorkspace();
+    } else {
+      openAuth();
+    }
   }
 
   function bindEvents() {
@@ -420,10 +416,12 @@
       });
     });
 
-    refs.modelSelect.addEventListener("change", function () {
-      db.settings.modelMode = refs.modelSelect.value;
-      saveDb();
-    });
+    if (refs.modelSelect) {
+      refs.modelSelect.addEventListener("change", function () {
+        db.settings.modelMode = refs.modelSelect.value;
+        saveDb();
+      });
+    }
 
     if (refs.exportPdf) {
       refs.exportPdf.addEventListener("click", exportActiveChat);
@@ -628,7 +626,9 @@
   function openWorkspace() {
     refs.authScreen.classList.add("hidden");
     refs.workspace.classList.remove("hidden");
-    refs.modelSelect.value = db.settings.modelMode || "fusion";
+    if (refs.modelSelect) {
+      refs.modelSelect.value = db.settings.modelMode || "fusion";
+    }
     // Always start with a fresh empty chat to show the greeting
     db.chats = [];
     var freshChat = createChat("New Session");
@@ -1410,14 +1410,16 @@
   function updateViewChrome() {
     var map = {
       chat: ["Chat", "Luvia Fusion"],
-      images: ["Images", "Photo generation lab"],
-      mcq: ["CA MCQs", "Intermediate practice"],
-      gems: ["Gems", "Specialized assistants"],
-      account: ["Account", "Personal intelligence"]
+    var titles = {
+      chat: { k: "Chat", t: "Luvia Fusion" },
+      images: { k: "Images", t: "Photo generation lab" },
+      mcq: { k: "CA MCQs", t: "Intermediate practice" },
+      gems: { k: "Gems", t: "Specialized assistants" },
+      account: { k: "Account", t: "Personal intelligence" }
     };
-    var pair = map[state.view] || map.chat;
-    if (refs.viewKicker) refs.viewKicker.textContent = pair[0];
-    if (refs.viewTitle) refs.viewTitle.textContent = pair[1];
+    var d = titles[state.view] || titles.chat;
+    if (refs.viewKicker) refs.viewKicker.textContent = d.k;
+    if (refs.viewTitle) refs.viewTitle.textContent = d.t;
     if (refs.exportPdf) refs.exportPdf.classList.toggle("hidden", state.view !== "chat");
   }
 

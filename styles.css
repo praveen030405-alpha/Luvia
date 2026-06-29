@@ -1097,6 +1097,22 @@ select:focus,
   .message { max-width: 95%; }
 }
 
+@media (min-width: 681px) {
+  .workspace {
+    grid-template-columns: var(--sidebar) 1fr;
+  }
+  .sidebar {
+    position: relative;
+    transform: translateX(0);
+    background: transparent;
+    backdrop-filter: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  #sidebarToggle {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;
