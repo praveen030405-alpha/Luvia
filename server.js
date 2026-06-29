@@ -10,6 +10,7 @@ const authRoutes = require('./src/backend/routes/auth');
 const chatRoutes = require('./src/backend/routes/chat');
 const gemRoutes = require('./src/backend/routes/gems');
 const workspaceRoutes = require('./src/backend/routes/workspace');
+const uploadRoutes = require('./src/backend/routes/upload');
 const { isMongoReady } = require('./src/backend/utils/db');
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/gems', gemRoutes);
 app.use('/api/workspace', workspaceRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(express.static(__dirname));
 

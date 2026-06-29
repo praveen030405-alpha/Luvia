@@ -1037,9 +1037,14 @@
               chatId: chat._id || null, // Might be new
               message: prompt,
               mode: db.settings.modelMode || "fusion",
-              systemInstruction: db.settings.systemInstruction || ""
+              systemInstruction: db.settings.systemInstruction || "",
+              image: window._pendingImage || null
             })
           });
+          
+          if (window._pendingImage) {
+            window._pendingImage = null; // Clear it after sending
+          }
 
           if (!response.ok) {
             throw new Error("HTTP error " + response.status);
@@ -1292,61 +1297,54 @@
     if (!file) return;
 
     var chat = ensureChat();
-    var now = new Date().toISOString();
-    chat.messages.push({
-      id: uid("msg"),
-      role: "user",
-      content: "Attached file: " + file.name + " (" + Math.round(file.size / 1024) + " KB)",
-      createdAt: now,
-      meta: "You"
+    
+    setThinking(true);
+    addScanResult('Uploading ' + file.name + '...');
+    
+    var formData = new FormData();
+    formData.append('file', file);
+    
+    fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      setThinking(false);
+      if (data.error) {
+         addScanResult('Upload error: ' + data.error);
+         return;
+      }
+      
+      if (data.type === 'text') {
+         db.settings = db.settings || {};
+         db.settings.systemInstruction = (db.settings.systemInstruction || '') + '\n\nDocument Context (' + data.filename + '):\n' + data.text.substring(0, 20000);
+         saveDb();
+         addScanResult('Extracted text from ' + data.filename + ' and added it to system knowledge.');
+      } else if (data.type === 'image') {
+         window._pendingImage = data;
+         addScanResult('Uploaded image ' + data.filename + '. Your next message will include this image!');
+      }
+    })
+    .catch(err => {
+      setThinking(false);
+      addScanResult('Upload failed: ' + err.message);
     });
 
     function addScanResult(text) {
       chat.messages.push({
-        id: uid("msg"),
-        role: "assistant",
+        id: uid('msg'),
+        role: 'assistant',
         content: text,
         createdAt: new Date().toISOString(),
-        meta: "Document analyst"
+        meta: 'System'
       });
       chat.updatedAt = new Date().toISOString();
       saveDb();
       renderAll();
     }
 
-    if (file.type.indexOf("text") === 0 || /\.txt$/i.test(file.name)) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        addScanResult(
-          "Text extraction complete:\n\n" +
-            compactText(String(reader.result || ""), 1200) +
-            "\n\nI can summarize, draft, translate, or turn this into a PDF outline."
-        );
-      };
-      reader.readAsText(file);
-    } else if (file.type.indexOf("image") === 0) {
-      setThinking(true);
-      addScanResult("Extracting text from image using Tesseract.js. This may take a moment on first load...");
-      Tesseract.recognize(
-        file,
-        'eng',
-        { logger: m => console.log(m) }
-      ).then(function({ data: { text } }) {
-        setThinking(false);
-        addScanResult("OCR Extraction Complete:\n\n" + text);
-      }).catch(function(err) {
-        setThinking(false);
-        addScanResult("OCR Error: Could not read image text.");
-      });
-    } else if (/\.pdf$/i.test(file.name)) {
-      addScanResult(
-        "PDF received. The next backend step is page rendering plus OCR/text extraction, then summarization, tables, and a generated PDF response."
-      );
-    } else {
-      addScanResult("File received. This type is ready for a backend parser connector.");
-    }
-
-    refs.fileInput.value = "";
+    refs.fileInput.value = '';
   }
 
   function startVoiceInput() {

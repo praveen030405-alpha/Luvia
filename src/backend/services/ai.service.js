@@ -37,7 +37,8 @@ class AIService {
   async getModel(mode, systemInstruction = '') {
     return this.ensureClient().getGenerativeModel({
       model: this.modelForMode(mode),
-      systemInstruction: this.buildSystemInstruction(mode, systemInstruction)
+      systemInstruction: this.buildSystemInstruction(mode, systemInstruction),
+      tools: [{ googleSearch: {} }]
     });
   }
 
@@ -87,10 +88,14 @@ class AIService {
     return String(response.text || response.content || '').trim();
   }
 
-  async generateResponse(messages, mode = 'fusion', systemInstruction = '') {
+  async generateResponse(messages, mode = 'fusion', systemInstruction = '', image = null) {
     try {
       const model = await this.getModel(mode, systemInstruction);
-      const prompt = await this.buildPrompt(messages, mode);
+      const textPrompt = await this.buildPrompt(messages, mode);
+      const prompt = image ? [
+        { inlineData: { data: image.base64, mimeType: image.mimetype } },
+        textPrompt
+      ] : textPrompt;
       const result = await model.generateContent(prompt);
       return this.extractText(result.response) || 'I could not produce a response for that request.';
     } catch (error) {
@@ -99,10 +104,14 @@ class AIService {
     }
   }
 
-  async *generateStream(messages, mode = 'fusion', systemInstruction = '') {
+  async *generateStream(messages, mode = 'fusion', systemInstruction = '', image = null) {
     try {
       const model = await this.getModel(mode, systemInstruction);
-      const prompt = await this.buildPrompt(messages, mode);
+      const textPrompt = await this.buildPrompt(messages, mode);
+      const prompt = image ? [
+        { inlineData: { data: image.base64, mimeType: image.mimetype } },
+        textPrompt
+      ] : textPrompt;
       const result = await model.generateContentStream(prompt);
 
       for await (const chunk of result.stream) {

@@ -50,7 +50,7 @@ function appendMessage(chat, role, content) {
 
 router.post('/message', async (req, res) => {
   try {
-    const { chatId, message, mode = 'fusion', systemInstruction = '' } = req.body;
+    const { chatId, message, mode = 'fusion', systemInstruction = '', image = null } = req.body;
     if (!message || !String(message).trim()) return res.status(400).json({ error: 'Message is required' });
 
     let chat = chatId ? await findChat(chatId, req.user.userId) : null;
@@ -61,7 +61,7 @@ router.post('/message', async (req, res) => {
     chat = await saveChat(chat);
 
     const formattedMessages = chat.messages.map((item) => ({ role: item.role, content: item.content }));
-    const aiResponseContent = await aiService.generateResponse(formattedMessages, chat.mode || mode, systemInstruction);
+    const aiResponseContent = await aiService.generateResponse(formattedMessages, chat.mode || mode, systemInstruction, image);
 
     appendMessage(chat, 'assistant', aiResponseContent);
     chat = await saveChat(chat);
@@ -80,7 +80,7 @@ router.post('/stream', async (req, res) => {
   let chat;
 
   try {
-    const { chatId, message, mode = 'fusion', systemInstruction = '' } = req.body;
+    const { chatId, message, mode = 'fusion', systemInstruction = '', image = null } = req.body;
     if (!message || !String(message).trim()) return res.status(400).json({ error: 'Message is required' });
 
     chat = chatId ? await findChat(chatId, req.user.userId) : null;
@@ -102,7 +102,7 @@ router.post('/stream', async (req, res) => {
     const formattedMessages = chat.messages.map((item) => ({ role: item.role, content: item.content }));
     let fullContent = '';
 
-    for await (const delta of aiService.generateStream(formattedMessages, chat.mode, systemInstruction)) {
+    for await (const delta of aiService.generateStream(formattedMessages, chat.mode, systemInstruction, image)) {
       fullContent += delta;
       res.write('data: ' + JSON.stringify({ type: 'chunk', text: delta }) + '\n\n');
     }
