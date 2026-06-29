@@ -274,6 +274,8 @@
                   name: data.user.name,
                   provider: "Google"
                 });
+              } else {
+                setAuthStatus(data.error || "Google Sign-In failed.", "error");
               }
             } catch(err) {
               setAuthStatus("Google Sign-In failed to connect to backend.", "error");
@@ -596,6 +598,8 @@
           name: data.user.name,
           provider: provider
         });
+      } else {
+        setAuthStatus(data.error || "Authentication failed. Try again.", "error");
       }
     } catch(err) {
       setAuthStatus("Failed to connect to backend server.", "error");
