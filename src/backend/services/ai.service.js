@@ -3,7 +3,8 @@ const OpenAI = require('openai');
 
 class AIService {
   constructor() {
-    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key');
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.Gemini_API_key || 'dummy_key';
+    this.gemini = new GoogleGenerativeAI(geminiKey);
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy_key' });
   }
 
