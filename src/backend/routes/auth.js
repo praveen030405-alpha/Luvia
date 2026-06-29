@@ -1,9 +1,7 @@
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-// In-memory user store for prototype
-const users = [];
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const User = require('../models/User');
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -21,14 +19,15 @@ router.post('/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
     
-    // Find or create user in-memory
-    let user = users.find(u => u.email === email);
+    // Find or create user in DB
+    let user = await User.findOne({ email });
     if (!user) {
-      user = { _id: generateId(), email, name, picture, googleId };
-      users.push(user);
+      user = new User({ email, name, picture, googleId });
+      await user.save();
     } else if (!user.googleId) {
       user.googleId = googleId;
       user.picture = picture;
+      await user.save();
     }
     
     // Issue our own JWT session token
@@ -48,10 +47,10 @@ router.post('/google', async (req, res) => {
 router.post('/guest', async (req, res) => {
   try {
     const { email, name } = req.body;
-    let user = users.find(u => u.email === email);
+    let user = await User.findOne({ email });
     if (!user) {
-      user = { _id: generateId(), email, name, googleId: 'guest-' + Date.now() };
-      users.push(user);
+      user = new User({ email, name, googleId: 'guest-' + Date.now() });
+      await user.save();
     }
     const token = jwt.sign(
       { userId: user._id, email: user.email },
@@ -59,10 +58,12 @@ router.post('/guest', async (req, res) => {
       { expiresIn: '7d' }
     );
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
-  } catch(err) {
-    res.status(500).json({ error: 'Failed to create guest session' });
+  } catch (error) {
+    console.error('Guest Auth Error:', error);
+    res.status(500).json({ error: 'Failed to authenticate guest' });
   }
 });
+
 
 // Middleware to protect routes
 const authMiddleware = (req, res, next) => {

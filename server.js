@@ -22,7 +22,12 @@ app.use(express.json());
 // Serve static frontend files from current directory
 app.use(express.static(__dirname));
 
-// Database has been removed - running completely stateless
+// Database Connection
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000,
+}).then(() => console.log('✅ Connected to MongoDB Atlas'))
+  .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Initialize Vector Database (Advanced RAG)
 const vectorService = require('./src/backend/services/vector.service');
