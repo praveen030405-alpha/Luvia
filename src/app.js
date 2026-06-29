@@ -1408,8 +1408,6 @@
   }
 
   function updateViewChrome() {
-    var map = {
-      chat: ["Chat", "Luvia Fusion"],
     var titles = {
       chat: { k: "Chat", t: "Luvia Fusion" },
       images: { k: "Images", t: "Photo generation lab" },
@@ -1792,7 +1790,7 @@
     }).from(element).save();
   }
 
-  document.addEventListener("DOMContentLoaded", boot);
+  // document.addEventListener("DOMContentLoaded", boot); removed to avoid duplicate
   
   // Global TTS handler
   window.readAloud = function(btn) {
