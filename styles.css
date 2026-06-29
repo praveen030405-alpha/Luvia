@@ -89,48 +89,63 @@ svg {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(circle at 16% 18%, rgba(59, 130, 246, 0.15), transparent 30%),
-    radial-gradient(circle at 84% 14%, rgba(168, 85, 247, 0.12), transparent 28%),
-    radial-gradient(circle at 64% 88%, rgba(99, 102, 241, 0.12), transparent 35%);
+    radial-gradient(circle at 16% 18%, rgba(59, 130, 246, 0.2), transparent 35%),
+    radial-gradient(circle at 84% 14%, rgba(168, 85, 247, 0.18), transparent 32%),
+    radial-gradient(circle at 64% 88%, rgba(99, 102, 241, 0.16), transparent 40%);
   transition: opacity 1.5s ease;
+}
+
+/* Intensified aurora when app is in thinking mode */
+body.aurora-thinking .aurora-field {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(59, 130, 246, 0.38), transparent 40%),
+    radial-gradient(circle at 84% 14%, rgba(168, 85, 247, 0.32), transparent 36%),
+    radial-gradient(circle at 64% 88%, rgba(99, 102, 241, 0.3), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.1), transparent 60%);
 }
 
 .aurora-band {
   position: absolute;
-  width: 75vw;
-  height: 45vh;
-  filter: blur(60px);
-  opacity: 0.35;
+  width: 80vw;
+  height: 50vh;
+  filter: blur(55px);
+  opacity: 0.55;
   transform: rotate(-12deg);
-  animation: auroraFloat 18s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  animation: auroraFloat 14s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+body.aurora-thinking .aurora-band {
+  opacity: 0.85;
+  animation-duration: 5s;
+  filter: blur(45px);
 }
 
 .band-one {
   left: -20vw;
   top: 5vh;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.65), transparent);
 }
 
 .band-two {
   right: -30vw;
   top: 25vh;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.4), transparent);
-  animation-delay: -5s;
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.55), transparent);
+  animation-delay: -4s;
 }
 
 .band-three {
   left: 15vw;
   bottom: -25vh;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.25), transparent);
-  animation-delay: -10s;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.45), transparent);
+  animation-delay: -8s;
 }
 
 @keyframes auroraFloat {
   from {
-    transform: translate3d(-3%, -2%, 0) rotate(-12deg) scale(0.95);
+    transform: translate3d(-4%, -3%, 0) rotate(-12deg) scale(0.92);
   }
   to {
-    transform: translate3d(4%, 3%, 0) rotate(-8deg) scale(1.05);
+    transform: translate3d(5%, 4%, 0) rotate(-7deg) scale(1.08);
   }
 }
 
@@ -892,62 +907,143 @@ select {
 }
 
 .thinking {
-  min-height: 40px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 6px;
-  margin-top: 4px;
+  gap: 16px;
+  padding: 14px 20px;
+  margin: 4px 0;
+  background: linear-gradient(135deg,
+    rgba(56, 242, 208, 0.06) 0%,
+    rgba(100, 199, 255, 0.04) 40%,
+    rgba(255, 109, 157, 0.06) 100%);
+  border: 1px solid rgba(56, 242, 208, 0.18);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 20px rgba(56, 242, 208, 0.06),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  max-width: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.thinking::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(56, 242, 208, 0.1) 30%,
+    rgba(255, 109, 157, 0.08) 60%,
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: thinkingShimmer 2.2s ease-in-out infinite;
+}
+
+@keyframes thinkingShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.thinking-icon {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.thinking-sparkle {
+  width: 22px;
+  height: 22px;
+  animation: sparkleSpin 2.8s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(56,242,208,0.7));
+}
+
+@keyframes sparkleSpin {
+  0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 6px rgba(56,242,208,0.7)); }
+  25% { transform: rotate(90deg) scale(1.15); filter: drop-shadow(0 0 10px rgba(100,199,255,0.9)); }
+  50% { transform: rotate(180deg) scale(1); filter: drop-shadow(0 0 6px rgba(255,109,157,0.7)); }
+  75% { transform: rotate(270deg) scale(0.9); filter: drop-shadow(0 0 10px rgba(168,85,247,0.9)); }
+  100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 6px rgba(56,242,208,0.7)); }
+}
+
+.thinking-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.thinking-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(56, 242, 208, 0.7);
 }
 
 .thinking-text {
-  font-weight: 800;
-  font-size: 1.1rem;
-  background:
-    linear-gradient(90deg, #38f2d0, #64c7ff, #ff6d9d, #ffd166, #38f2d0);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  background: linear-gradient(90deg,
+    #e2e8f6 0%,
+    #38f2d0 25%,
+    #a78bfa 50%,
+    #f472b6 75%,
+    #e2e8f6 100%);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: textAurora 2.5s ease-in-out infinite;
-  filter:
-    drop-shadow(0 0 12px rgba(56, 242, 208, 0.4))
-    drop-shadow(0 0 24px rgba(255, 109, 157, 0.2));
-  letter-spacing: 0.5px;
+  animation: thinkingTextFlow 3s ease-in-out infinite;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+@keyframes thinkingTextFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .thinking-dots {
   display: inline-flex;
-  gap: 4px;
+  gap: 5px;
+  align-items: center;
 }
 
 .thinking-dots i {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--teal);
-  animation: dotPulse 900ms ease-in-out infinite;
+  background: rgba(56, 242, 208, 0.8);
+  animation: dotWave 1.4s ease-in-out infinite;
 }
 
 .thinking-dots i:nth-child(2) {
-  animation-delay: 130ms;
-  background: var(--rose);
+  animation-delay: 0.15s;
+  background: rgba(167, 139, 250, 0.8);
 }
 
 .thinking-dots i:nth-child(3) {
-  animation-delay: 260ms;
-  background: var(--amber);
+  animation-delay: 0.3s;
+  background: rgba(244, 114, 182, 0.8);
 }
 
-@keyframes dotPulse {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.45;
+@keyframes dotWave {
+  0%, 60%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.5;
   }
-  50% {
-    transform: translateY(-5px);
+  30% {
+    transform: translateY(-6px) scale(1.3);
     opacity: 1;
+    box-shadow: 0 0 8px currentColor;
   }
 }
 
@@ -1454,25 +1550,50 @@ a.small-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 20vh; /* Push greeting up slightly */
+  padding-bottom: 20vh;
 }
 .gemini-star-logo {
   display: flex;
   justify-content: center;
   margin-bottom: 24px;
-  animation: floatStar 3s ease-in-out infinite;
+  animation: starBounce 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             floatStar 3.5s ease-in-out 1.8s infinite;
 }
 @keyframes floatStar {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.06); }
+}
+@keyframes starBounce {
+  0% { transform: translateY(60px) scale(0.3) rotate(-20deg); opacity: 0; }
+  40% { opacity: 1; }
+  60% { transform: translateY(-18px) scale(1.15) rotate(5deg); }
+  80% { transform: translateY(8px) scale(0.95) rotate(-2deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
 }
 .gemini-greeting {
-  font-size: clamp(28px, 4vw, 40px);
-  font-weight: 500;
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 700;
   text-align: center;
-  color: var(--text);
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #e2e8f6, #38f2d0 30%, #a78bfa 60%, #f472b6);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: greetingBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both,
+             greetingGlow 4s ease-in-out 2s infinite;
+}
+@keyframes greetingBounce {
+  0% { transform: translateY(30px) scale(0.85); opacity: 0; filter: blur(8px); }
+  60% { transform: translateY(-8px) scale(1.04); opacity: 1; filter: blur(0); }
+  80% { transform: translateY(4px) scale(0.98); }
+  100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+}
+@keyframes greetingGlow {
+  0%, 100% { background-position: 0% 50%; filter: drop-shadow(0 0 0px rgba(56,242,208,0)); }
+  50% { background-position: 100% 50%; filter: drop-shadow(0 0 20px rgba(167,139,250,0.4)); }
 }
 
 /* Gemini Glassy Pill Input */

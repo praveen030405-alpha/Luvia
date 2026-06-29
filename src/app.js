@@ -214,8 +214,14 @@
       accountView: $("#accountView")
     };
 
+    // Kick off advanced aurora on load (intense during splash)
+    document.body.classList.add("aurora-thinking");
     window.setTimeout(function () {
       refs.splash.classList.add("done");
+      // Fade back to normal aurora after splash
+      window.setTimeout(function () {
+        document.body.classList.remove("aurora-thinking");
+      }, 1200);
     }, 1800);
 
     bindEvents();
@@ -565,20 +571,10 @@
       provider: user.provider,
       lastLogin: new Date().toISOString()
     };
-    if (!db.chats.length) {
-      var chat = createChat("Welcome to Luvia");
-      chat.messages.push({
-        id: uid("msg"),
-        role: "assistant",
-        content:
-          "Welcome to Luvia. I can help with CA study, world and economy analysis, document drafting, PDF planning, image ideas, OCR-style extraction, and multi-step reasoning.",
-        createdAt: new Date().toISOString(),
-        meta: "Luvia Fusion"
-      });
-      state.activeChatId = chat.id;
-    } else {
-      state.activeChatId = db.chats[0].id;
-    }
+    // Always start a fresh session — clear all old chats
+    db.chats = [];
+    var chat = createChat("New Session");
+    state.activeChatId = chat.id;
     saveDb();
     openWorkspace();
   }
@@ -593,6 +589,11 @@
     refs.authScreen.classList.add("hidden");
     refs.workspace.classList.remove("hidden");
     refs.modelSelect.value = db.settings.modelMode || "fusion";
+    // Always start with a fresh empty chat to show the greeting
+    db.chats = [];
+    var freshChat = createChat("New Session");
+    state.activeChatId = freshChat.id;
+    saveDb();
     ensureChat();
     renderAll();
   }
@@ -692,27 +693,35 @@
     var chat = ensureChat();
     refs.messageStream.innerHTML = "";
 
+    // ALWAYS show the greeting at the top of the chat area
+    var firstName = db.user ? db.user.name.split(" ")[0] : "User";
+    var greetingDiv = document.createElement("div");
+    greetingDiv.className = "empty-state gemini-empty";
+    greetingDiv.innerHTML =
+      '<div class="empty-state-inner">' +
+      '<div class="gemini-star-logo">' +
+      '<svg viewBox="0 0 24 24" width="52" height="52"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" fill="url(#star-grad-main)"/></svg>' +
+      '<svg width="0" height="0"><defs><linearGradient id="star-grad-main" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38f2d0"/><stop offset="50%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#f472b6"/></linearGradient></defs></svg>' +
+      '</div>' +
+      '<h3 class="gemini-greeting">Hi ' + escapeHtml(firstName) + ', let\'s get into it</h3>' +
+      '</div>';
+
+    // If no messages yet, just show the greeting centered
     if (!chat.messages.length) {
-      var empty = document.createElement("div");
-      empty.className = "empty-state gemini-empty";
-      var firstName = db.user ? db.user.name.split(" ")[0] : "User";
-      empty.innerHTML =
-        '<div class="empty-state-inner">' +
-        '<div class="gemini-star-logo">' +
-        '<svg viewBox="0 0 24 24" width="48" height="48"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" fill="url(#star-grad)"/></svg>' +
-        '<svg width="0" height="0"><defs><linearGradient id="star-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ec4899"/><stop offset="50%" stop-color="#a855f7"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs></svg>' +
-        '</div>' +
-        '<h3 class="gemini-greeting">Hi ' + escapeHtml(firstName) + ', let\'s get into it</h3>' +
-        "</div>";
-      refs.messageStream.appendChild(empty);
+      refs.messageStream.appendChild(greetingDiv);
       return;
     }
+
+    // Show greeting in a compact top banner when there are messages
+    greetingDiv.style.cssText = 'padding-bottom: 0; min-height: auto; margin-bottom: 16px; opacity: 0.6; transform: scale(0.85); transform-origin: top center;';
+    greetingDiv.querySelector('.gemini-greeting').style.cssText = 'font-size: clamp(16px, 2vw, 24px); animation: none; background: linear-gradient(135deg, #e2e8f6, #38f2d0 50%, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent;';
+    greetingDiv.querySelector('.gemini-star-logo').style.cssText = 'margin-bottom: 8px; animation: floatStar 3.5s ease-in-out infinite;';
+    refs.messageStream.appendChild(greetingDiv);
 
     chat.messages.forEach(function (message) {
       var article = document.createElement("article");
       article.className = "message " + (message.role === "user" ? "user" : "assistant");
       
-      // Check for chart payload [CHART: type, data]
       // Parse Markdown and Math for assistant messages
       var contentHtml = escapeHtml(message.content);
       if (message.role === "assistant" && typeof marked !== 'undefined') {
@@ -731,7 +740,6 @@
         var chartData = chartMatch[2];
         contentHtml = contentHtml.replace(chartMatch[0], "<div class='chart-container'><canvas></canvas></div>");
         
-        // Wait for render then draw chart
         window.setTimeout(function() {
           try {
             var canvas = article.querySelector('canvas');
@@ -745,7 +753,6 @@
           } catch(e) { console.error("Chart render error:", e); }
         }, 50);
       } else if (message.content.indexOf("[VISION]") === 0) {
-        // Handle vision video box
         contentHtml = contentHtml.replace("[VISION]", "<div class='vision-box'><video autoplay playsinline muted></video><canvas></canvas></div>");
       }
 
@@ -755,7 +762,6 @@
         "</div>";
       refs.messageStream.appendChild(article);
       
-      // Auto-render math with KaTeX
       if (typeof renderMathInElement !== 'undefined') {
         renderMathInElement(article, {
           delimiters: [
@@ -939,6 +945,8 @@
   function setThinking(active) {
     state.thinking = active;
     refs.thinkingIndicator.classList.toggle("hidden", !active);
+    // Toggle advanced aurora when AI is processing
+    document.body.classList.toggle("aurora-thinking", active);
   }
 
   function modelLabel(mode) {

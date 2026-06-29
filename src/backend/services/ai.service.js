@@ -3,7 +3,14 @@ const OpenAI = require('openai');
 
 class AIService {
   constructor() {
-    const geminiKey = process.env.GEMINI_API_KEY || process.env.Gemini_API_key || 'dummy_key';
+    let geminiKey = process.env.GEMINI_API_KEY || process.env.Gemini_API_key;
+    if (!geminiKey) {
+      try {
+        const keys = require('../luvia-keys.json');
+        geminiKey = keys.GEMINI_API_KEY;
+      } catch(e) {}
+    }
+    geminiKey = (geminiKey || 'dummy_key').trim();
     this.gemini = new GoogleGenerativeAI(geminiKey);
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'dummy_key' });
   }
