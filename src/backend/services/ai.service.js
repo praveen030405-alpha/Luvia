@@ -15,7 +15,7 @@ class AIService {
     // Set global LLM in LlamaIndex to use Gemini
     Settings.llm = new Gemini({
       apiKey: geminiKey,
-      model: 'models/gemini-2.5-flash',
+      model: 'gemini-2.5-flash',
     });
     this.apiKey = geminiKey;
   }
@@ -55,7 +55,7 @@ class AIService {
         // Pass instruction dynamically
         const caEngine = new SimpleChatEngine({
           memory,
-          llm: new Gemini({ apiKey: this.apiKey, model: 'models/gemini-2.5-flash' })
+          llm: new Gemini({ apiKey: this.apiKey, model: 'gemini-2.5-flash' })
         });
         
         // Provide the instruction as context
@@ -93,7 +93,7 @@ class AIService {
         
         const caEngine = new SimpleChatEngine({
           memory,
-          llm: new Gemini({ apiKey: this.apiKey, model: 'models/gemini-2.5-flash' })
+          llm: new Gemini({ apiKey: this.apiKey, model: 'gemini-2.5-flash' })
         });
         
         return await caEngine.chat({ message: caInstruction + "\n\nUser Question: " + userQuery, stream: true });
