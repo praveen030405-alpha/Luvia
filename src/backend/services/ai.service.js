@@ -42,7 +42,9 @@ class AIService {
   }
 
   async _callGemini(messages, modelName, systemInstruction) {
-    const model = this.gemini.getGenerativeModel({ model: modelName, systemInstruction });
+    const config = { model: modelName };
+    if (systemInstruction) config.systemInstruction = systemInstruction;
+    const model = this.gemini.getGenerativeModel(config);
     
     // Convert history format to Gemini format
     const history = messages.map(msg => ({
