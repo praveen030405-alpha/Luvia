@@ -38,7 +38,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
-  late String _jwtToken;
+  String? _jwtToken;
   final String _apiUrl = 'https://luvia-omega.vercel.app/api';
 
   // Animation Controllers for Aurora
@@ -55,6 +55,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _controller.dispose();
     _anim1.dispose();
     _anim2.dispose();
     super.dispose();
@@ -81,6 +82,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+    if (_jwtToken == null) {
+      _addMessage('system', 'Not connected yet. Please wait.');
+      return;
+    }
     
     _addMessage('user', text);
     _controller.clear();
@@ -130,7 +135,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.1)),
+            child: Container(color: Colors.black.withValues(alpha: 0.1)),
           ),
         ),
       ),
@@ -150,7 +155,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.deepPurpleAccent.withOpacity(0.5),
+                        Colors.deepPurpleAccent.withValues(alpha: 0.5),
                         Colors.transparent
                       ],
                     ),
@@ -172,7 +177,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.blueAccent.withOpacity(0.4),
+                        Colors.blueAccent.withValues(alpha: 0.4),
                         Colors.transparent
                       ],
                     ),
@@ -184,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           // Blur Layer over Aurora
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-            child: Container(color: Colors.black.withOpacity(0.6)),
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
           ),
           
           // Chat Interface
@@ -224,7 +229,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: GlassmorphicContainer(
-        width: double.infinity,
+        width: MediaQuery.of(context).size.width - 32,
         height: 60,
         borderRadius: 30,
         blur: 20,
@@ -232,14 +237,14 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         border: 1.5,
         linearGradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.1),
-            Colors.white.withOpacity(0.05),
+            Colors.white.withValues(alpha: 0.1),
+            Colors.white.withValues(alpha: 0.05),
           ],
         ),
         borderGradient: LinearGradient(
           colors: [
-            Colors.cyanAccent.withOpacity(0.5),
-            Colors.purpleAccent.withOpacity(0.5),
+            Colors.cyanAccent.withValues(alpha: 0.5),
+            Colors.purpleAccent.withValues(alpha: 0.5),
           ],
         ),
         child: Row(
@@ -308,14 +313,14 @@ class AnimatedChatBubble extends StatelessWidget {
           border: 1,
           linearGradient: LinearGradient(
             colors: [
-              isUser ? Colors.deepPurpleAccent.withOpacity(0.2) : Colors.white.withOpacity(0.1),
-              isUser ? Colors.blueAccent.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+              isUser ? Colors.deepPurpleAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
+              isUser ? Colors.blueAccent.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
             ],
           ),
           borderGradient: LinearGradient(
             colors: [
-              isUser ? Colors.purpleAccent.withOpacity(0.5) : Colors.white.withOpacity(0.2),
-              isUser ? Colors.blueAccent.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+              isUser ? Colors.purpleAccent.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.2),
+              isUser ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
             ],
           ),
           child: Padding(

@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 // Import Routes
 const authRoutes = require('./src/backend/routes/auth');
 const chatRoutes = require('./src/backend/routes/chat');
@@ -18,13 +17,7 @@ app.use(helmet({
 app.use(cors({ origin: '*', credentials: false })); // Allow all origins so local file:// testing works
 app.use(express.json());
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-  message: 'Too many requests from this IP, please try again after 15 minutes',
-});
-app.use('/api/', limiter);
+// Rate Limiting removed for prototype stability
 
 // Serve static frontend files from current directory
 app.use(express.static(__dirname));

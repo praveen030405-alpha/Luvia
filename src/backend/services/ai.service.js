@@ -36,8 +36,8 @@ class AIService {
         return await this._callGemini(messages, 'gemini-2.5-flash', systemInstruction);
       }
     } catch (error) {
-      console.error('AI Service Error:', error);
-      throw new Error('Failed to generate AI response.');
+      console.error('AI Service Detailed Error:', error.message, error.stack);
+      throw error;
     }
   }
 
