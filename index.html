@@ -237,23 +237,9 @@
           <section id="chatView" class="view active-view" aria-label="Chat workspace">
             <div id="messageStream" class="message-stream"></div>
             <div id="thinkingIndicator" class="thinking hidden" aria-live="polite">
-              <div class="thinking-icon">
-                <svg class="thinking-sparkle" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="url(#spark-grad)" stroke="none"/>
-                  <path d="M19 3L19.8 5.2L22 6L19.8 6.8L19 9L18.2 6.8L16 6L18.2 5.2L19 3Z" fill="rgba(56,242,208,0.9)" stroke="none"/>
-                  <defs>
-                    <linearGradient id="spark-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#38f2d0"/>
-                      <stop offset="50%" stop-color="#a78bfa"/>
-                      <stop offset="100%" stop-color="#f472b6"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-              <div class="thinking-body">
-                <span class="thinking-label">Luvia</span>
-                <span class="thinking-text">Thinking deeply…</span>
-                <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <div class="thinking-orb"></div>
+              <div class="thinking-body" style="margin-left: 12px;">
+                <span class="thinking-text" style="font-size: 16px;">Luvia is thinking...</span>
               </div>
             </div>
             <div id="smartSuggestions" class="smart-suggestions hidden"></div>
