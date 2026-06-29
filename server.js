@@ -41,17 +41,18 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/luvia')
 // Initialize Vector Database (Advanced RAG)
 const vectorService = require('./src/backend/services/vector.service');
 const caSyllabus = require('./src/backend/data/ca_syllabus_mock');
-(async () => {
-  try {
-    console.log('📚 Indexing CA Syllabus into Vector Database...');
-    for (const doc of caSyllabus) {
-      await vectorService.indexDocument(doc.id, doc.text, doc.metadata);
-    }
-    console.log('✅ Vector Database Ready! Indexed ' + caSyllabus.length + ' CA documents.');
-  } catch (err) {
-    console.error('❌ Failed to index vectors:', err);
-  }
-})();
+// Disable auto-indexing on cold start for Vercel compatibility
+// (async () => {
+//   try {
+//     console.log('📚 Indexing CA Syllabus into Vector Database...');
+//     for (const doc of caSyllabus) {
+//       await vectorService.indexDocument(doc.id, doc.text, doc.metadata);
+//     }
+//     console.log('✅ Vector Database Ready! Indexed ' + caSyllabus.length + ' CA documents.');
+//   } catch (err) {
+//     console.error('❌ Failed to index vectors:', err);
+//   }
+// })();
 
 // API Routes
 app.use('/api/auth', authRoutes);
