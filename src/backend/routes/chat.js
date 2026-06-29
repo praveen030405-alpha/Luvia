@@ -2,123 +2,132 @@ const express = require('express');
 const { authMiddleware } = require('./auth');
 const Chat = require('../models/Chat');
 const aiService = require('../services/ai.service');
+const memoryStore = require('../services/memory-store');
+const { isMongoReady } = require('../utils/db');
 
 const router = express.Router();
 
-// Apply auth middleware to all chat routes
 router.use(authMiddleware);
 
-// Send a message
+function compactTitle(message) {
+  const text = String(message || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'New Chat';
+  return text.length > 42 ? text.slice(0, 39) + '...' : text;
+}
+
+function serializeChatId(chat) {
+  return String(chat._id || chat.id);
+}
+
+async function createChat(userId, message, mode) {
+  const title = compactTitle(message);
+  if (!isMongoReady()) {
+    return memoryStore.createChat({ userId: userId, title: title, mode: mode, messages: [] });
+  }
+
+  return new Chat({
+    userId: userId,
+    title: title,
+    mode: mode,
+    messages: []
+  });
+}
+
+async function findChat(chatId, userId) {
+  if (!chatId) return null;
+  if (!isMongoReady()) return memoryStore.findChat(chatId, userId);
+  return Chat.findOne({ _id: chatId, userId: userId });
+}
+
+async function saveChat(chat) {
+  if (chat && typeof chat.save === 'function') return chat.save();
+  return memoryStore.saveChat(chat);
+}
+
+function appendMessage(chat, role, content) {
+  chat.messages.push({ role: role, content: content });
+}
+
 router.post('/message', async (req, res) => {
   try {
-    const { chatId, message, mode = 'fusion' } = req.body;
-    
-    let chat;
-    if (chatId) {
-      chat = await Chat.findOne({ _id: chatId, userId: req.user.userId });
-      if (!chat) return res.status(404).json({ error: 'Chat not found' });
-    } else {
-      chat = new Chat({
-        userId: req.user.userId,
-        title: message.substring(0, 30) + (message.length > 30 ? '...' : ''),
-        mode,
-        messages: []
-      });
-    }
+    const { chatId, message, mode = 'fusion', systemInstruction = '' } = req.body;
+    if (!message || !String(message).trim()) return res.status(400).json({ error: 'Message is required' });
 
-    // Add user message
-    chat.messages.push({ role: 'user', content: message });
-    await chat.save(); // Save immediately so we don't lose the user's message if AI fails
+    let chat = chatId ? await findChat(chatId, req.user.userId) : null;
+    if (chatId && !chat) return res.status(404).json({ error: 'Chat not found' });
+    if (!chat) chat = await createChat(req.user.userId, message, mode);
 
-    // Call AI Service
-    // AI Service expects plain objects, so we map Mongoose documents to plain objects
-    const formattedMessages = chat.messages.map(m => ({ role: m.role, content: m.content }));
-    const aiResponseContent = await aiService.generateResponse(formattedMessages, chat.mode);
-    
-    // Add assistant message
-    chat.messages.push({ role: 'assistant', content: aiResponseContent });
-    await chat.save();
-    
+    appendMessage(chat, 'user', String(message));
+    chat = await saveChat(chat);
+
+    const formattedMessages = chat.messages.map((item) => ({ role: item.role, content: item.content }));
+    const aiResponseContent = await aiService.generateResponse(formattedMessages, chat.mode || mode, systemInstruction);
+
+    appendMessage(chat, 'assistant', aiResponseContent);
+    chat = await saveChat(chat);
+
     res.json({
-      chatId: chat._id,
+      chatId: serializeChatId(chat),
       message: chat.messages[chat.messages.length - 1]
     });
   } catch (error) {
-    console.error('Chat Error:', error);
+    console.error('Chat Error:', error.message);
     res.status(500).json({ error: 'Failed to process message', details: error.message });
   }
 });
 
-// Stream a message (Server-Sent Events)
 router.post('/stream', async (req, res) => {
+  let chat;
+
   try {
     const { chatId, message, mode = 'fusion', systemInstruction = '' } = req.body;
-    
-    let chat;
-    if (chatId) {
-      chat = await Chat.findOne({ _id: chatId, userId: req.user.userId });
-      if (!chat) return res.status(404).json({ error: 'Chat not found' });
-    } else {
-      // Auto-generate title
-      let title = "New Chat";
-      try {
-        const titlePrompt = `Generate a very short 2-3 word title for this message: "${message.substring(0, 50)}". Return ONLY the title, no quotes.`;
-        title = await aiService.generateResponse([{role: 'user', content: titlePrompt}], 'fusion');
-        title = title.replace(/['"]/g, '').trim();
-      } catch(e) {
-        title = message.substring(0, 25) + '...';
-      }
+    if (!message || !String(message).trim()) return res.status(400).json({ error: 'Message is required' });
 
-      chat = new Chat({
-        userId: req.user.userId,
-        title: title,
-        mode,
-        messages: []
-      });
-    }
+    chat = chatId ? await findChat(chatId, req.user.userId) : null;
+    if (chatId && !chat) return res.status(404).json({ error: 'Chat not found' });
+    if (!chat) chat = await createChat(req.user.userId, message, mode);
 
-    // Add user message
-    chat.messages.push({ role: 'user', content: message });
-    await chat.save();
+    appendMessage(chat, 'user', String(message));
+    chat.mode = mode || chat.mode || 'fusion';
+    chat = await saveChat(chat);
 
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
-    
-    // Send initial chatId to frontend
-    res.write(`data: ${JSON.stringify({ type: 'init', chatId: chat._id })}\n\n`);
+    res.setHeader('X-Accel-Buffering', 'no'); // Prevent proxy buffering
+    res.flushHeaders && res.flushHeaders();
 
-    const formattedMessages = chat.messages.map(m => ({ role: m.role, content: m.content }));
-    const stream = await aiService.generateStream(formattedMessages, chat.mode, systemInstruction);
-    
-    let fullContent = "";
-    for await (const chunk of stream) {
-      const delta = chunk.response;
+    res.write('data: ' + JSON.stringify({ type: 'init', chatId: serializeChatId(chat) }) + '\n\n');
+
+    const formattedMessages = chat.messages.map((item) => ({ role: item.role, content: item.content }));
+    let fullContent = '';
+
+    for await (const delta of aiService.generateStream(formattedMessages, chat.mode, systemInstruction)) {
       fullContent += delta;
-      res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+      res.write('data: ' + JSON.stringify({ type: 'chunk', text: delta }) + '\n\n');
     }
 
-    // Save full assistant message
-    chat.messages.push({ role: 'assistant', content: fullContent });
-    await chat.save();
+    if (!fullContent.trim()) fullContent = 'I could not produce a response for that request.';
+    appendMessage(chat, 'assistant', fullContent);
+    await saveChat(chat);
 
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.write('data: ' + JSON.stringify({ type: 'done' }) + '\n\n');
     res.end();
   } catch (error) {
-    console.error('Chat Stream Error:', error);
-    // Send error over SSE if headers already sent, otherwise 500
+    console.error('Chat Stream Error:', error.message);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Stream failed' });
-    } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`);
-      res.end();
+      res.status(500).json({ error: 'Stream failed', details: error.message });
+      return;
     }
+    res.write('data: ' + JSON.stringify({ type: 'error', message: error.message }) + '\n\n');
+    res.end();
   }
 });
 
-// Get chat history list
 router.get('/', async (req, res) => {
   try {
+    if (!isMongoReady()) return res.json(await memoryStore.listChats(req.user.userId));
+
     const userChats = await Chat.find({ userId: req.user.userId })
       .select('_id title mode updatedAt')
       .sort({ updatedAt: -1 });
@@ -128,10 +137,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get specific chat
 router.get('/:id', async (req, res) => {
   try {
-    const chat = await Chat.findOne({ _id: req.params.id, userId: req.user.userId });
+    const chat = await findChat(req.params.id, req.user.userId);
     if (!chat) return res.status(404).json({ error: 'Chat not found' });
     res.json(chat);
   } catch (error) {
@@ -139,10 +147,15 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Delete a chat
 router.delete('/:id', async (req, res) => {
   try {
-    const deleted = await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    let deleted;
+    if (!isMongoReady()) {
+      deleted = await memoryStore.deleteChat(req.params.id, req.user.userId);
+    } else {
+      deleted = await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    }
+
     if (!deleted) return res.status(404).json({ error: 'Chat not found' });
     res.json({ success: true });
   } catch (error) {
