@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Luvia is a next generation AI workspace for chat, images, CA practice, documents, and personal intelligence."
+    />
+    <title>Luvia AI</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.3/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  </head>
+  <body>
+    <div class="aurora-field" aria-hidden="true">
+      <span class="aurora-band band-one"></span>
+      <span class="aurora-band band-two"></span>
+      <span class="aurora-band band-three"></span>
+    </div>
+
+    <div id="splash" class="splash-screen">
+      <div class="splash-mark" aria-hidden="true">
+        <span></span>
+      </div>
+      <div class="splash-name aurora-text">Luvia</div>
+      <div class="splash-subtitle">Neural expressive AI</div>
+    </div>
+
+    <div id="app" class="app-root">
+      <section id="authScreen" class="auth-screen">
+        <div class="auth-panel liquid-panel">
+          <div class="auth-brand">
+            <div class="brand-mark" aria-hidden="true">
+              <svg class="luvia-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <div>
+              <h1 class="aurora-text">Luvia</h1>
+              <p>Secure AI workspace</p>
+            </div>
+          </div>
+
+          <div class="auth-methods" role="tablist" aria-label="Authentication mode">
+            <button class="method-tab active" type="button" data-auth-mode="signin">Sign in</button>
+            <button class="method-tab" type="button" data-auth-mode="create">Create</button>
+            <button class="method-tab" type="button" data-auth-mode="magic">Magic link</button>
+          </div>
+
+          <button id="googleLogin" class="google-button" type="button">
+            <span class="google-g" aria-hidden="true">G</span>
+            <span>Continue with Google</span>
+          </button>
+
+          <div class="divider"><span>or</span></div>
+
+          <form id="authForm" class="auth-form" novalidate>
+            <label class="field">
+              <span>Email</span>
+              <input id="emailInput" type="email" autocomplete="email" placeholder="name@example.com" />
+              <small id="emailHint"></small>
+            </label>
+
+            <label id="passwordField" class="field">
+              <span>Password</span>
+              <input id="passwordInput" type="password" autocomplete="current-password" placeholder="8+ characters" />
+              <small id="passwordHint"></small>
+            </label>
+
+            <label id="captchaField" class="field hidden">
+              <span>Verification</span>
+              <input id="captchaInput" type="text" inputmode="numeric" placeholder="Enter 2406" />
+              <small>Extra check after repeated failed attempts.</small>
+            </label>
+
+            <button id="authSubmit" class="primary-action" type="submit">Sign in</button>
+            <button id="forgotPassword" class="text-action" type="button">Forgot password</button>
+            <p id="authMessage" class="auth-message" role="status"></p>
+          </form>
+
+          <div class="trust-strip">
+            <span>HTTPS ready</span>
+            <span>Local-first data</span>
+            <span>Rate-limit hooks</span>
+          </div>
+        </div>
+      </section>
+
+      <main id="workspace" class="workspace hidden">
+        <aside class="sidebar" aria-label="Luvia navigation">
+          <div class="sidebar-head">
+            <div class="brand-mark small" aria-hidden="true">
+              <svg class="luvia-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <div>
+              <div class="sidebar-title aurora-text">Luvia</div>
+              <div class="sidebar-caption">Fusion brain</div>
+            </div>
+          </div>
+
+          <button id="newChatButton" class="side-command" type="button">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+            </span>
+            <span>New chat</span>
+          </button>
+
+          <button id="searchToggle" class="side-command ghost" type="button">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m16 16 4 4" /></svg>
+            </span>
+            <span>Search chats</span>
+          </button>
+
+          <label id="searchBox" class="sidebar-search hidden">
+            <span class="sr-only">Search chat history</span>
+            <input id="chatSearch" type="search" placeholder="Search history" />
+          </label>
+
+          <nav class="side-nav" aria-label="Primary">
+            <button class="nav-item active" type="button" data-view="chat">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" /></svg>
+              </span>
+              <span>Chat</span>
+            </button>
+            <button class="nav-item" type="button" data-view="images">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="2" /><path d="m21 15-4-4-5 5-2-2-5 5" /></svg>
+              </span>
+              <span>Images</span>
+            </button>
+            <button class="nav-item" type="button" data-view="mcq">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12" /><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2" /></svg>
+              </span>
+              <span>CA MCQs</span>
+            </button>
+            <button class="nav-item" type="button" data-view="gems">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 3 9l9 12 9-12z" /><path d="M3 9h18M8 9l4 12 4-12" /></svg>
+              </span>
+              <span>Gems</span>
+            </button>
+          </nav>
+
+          <div class="chat-list-head">
+            <span>History</span>
+            <span id="chatCount">0</span>
+          </div>
+          <div id="chatList" class="chat-list"></div>
+
+          <div class="sidebar-foot">
+            <button id="accountButton" class="profile-button" type="button" data-view="account">
+              <span id="profileInitial">P</span>
+              <span id="profileName">Praveen</span>
+            </button>
+          </div>
+        </aside>
+
+        <section class="main-stage">
+          <header class="topbar gemini-topbar">
+            <div class="topbar-left">
+              <button id="sidebarToggle" class="icon-button" type="button" aria-label="Toggle sidebar">
+                <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              </button>
+            </div>
+            <div class="topbar-center">
+              <button id="modelDropdownBtn" class="model-dropdown-btn">
+                <span>Luvia Flash-Lite</span>
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div id="modelDropdownMenu" class="model-dropdown-menu hidden">
+                <button class="model-option active" data-value="fast">
+                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <div class="model-info">
+                    <div class="model-name">3.1 Flash-Lite</div>
+                    <div class="model-desc">Fastest answers</div>
+                  </div>
+                </button>
+                <button class="model-option" data-value="fusion">
+                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <div class="model-info">
+                    <div class="model-name">3.5 Flash</div>
+                    <div class="model-desc">All-around help</div>
+                  </div>
+                </button>
+                <button class="model-option" data-value="reasoning">
+                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <div class="model-info">
+                    <div class="model-name">3.1 Pro</div>
+                    <div class="model-desc">Advanced maths and code</div>
+                  </div>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="model-option no-check" data-value="ca">
+                  <div class="model-info">
+                    <div class="model-name">Thinking level</div>
+                  </div>
+                  <svg class="chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+                <select id="modelSelect" class="hidden"><option value="fast"></option><option value="fusion"></option><option value="reasoning"></option><option value="ca"></option></select>
+              </div>
+            </div>
+            <div class="topbar-right">
+              <button id="newChatTopBtn" class="icon-button" type="button" aria-label="New Chat">
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              </button>
+            </div>
+          </header>
+
+          <section id="chatView" class="view active-view" aria-label="Chat workspace">
+            <div id="messageStream" class="message-stream"></div>
+            <div id="thinkingIndicator" class="thinking hidden" aria-live="polite">
+              <span class="thinking-text">Luvia is thinking</span>
+              <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div id="smartSuggestions" class="smart-suggestions hidden"></div>
+            <form id="chatForm" class="composer glassy-pill">
+              <button id="attachButton" class="icon-button pill-action" type="button" aria-label="Attach file">
+                <svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input id="fileInput" class="hidden" type="file" accept=".txt,.pdf,.png,.jpg,.jpeg" />
+              <textarea id="chatInput" rows="1" placeholder="Ask Luvia"></textarea>
+              <div class="pill-actions-right">
+                <button id="voiceButton" class="icon-button pill-action" type="button" aria-label="Voice input">
+                  <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                </button>
+                <button class="send-button gemini-blue-btn" type="submit" aria-label="Send message">
+                  <svg viewBox="0 0 24 24" width="22" height="22" stroke="white" fill="none" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section id="imagesView" class="view" aria-label="Image generation workspace"></section>
+          <section id="mcqView" class="view" aria-label="CA MCQ workspace"></section>
+          <section id="gemsView" class="view" aria-label="Specialized assistant workspace"></section>
+          <section id="accountView" class="view" aria-label="Account workspace"></section>
+        </section>
+      </main>
+    </div>
+
+    <script src="data/ca-intermediate-mcqs.js"></script>
+    <script src="src/app.js"></script>
+  </body>
+</html>
