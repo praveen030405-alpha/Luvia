@@ -251,7 +251,7 @@
           client_id: "379325997192-72dl5qv2gd1e4av18kr351fds4phbbta.apps.googleusercontent.com",
           callback: async function(response) {
             try {
-              const res = await fetch("http://localhost:3000/api/auth/google", {
+              const res = await fetch("/api/auth/google", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ credential: response.credential })
@@ -537,7 +537,7 @@
 
   async function fetchGuestToken(email, name, provider) {
     try {
-      const res = await fetch("http://localhost:3000/api/auth/guest", {
+      const res = await fetch("/api/auth/guest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, name: name })
@@ -821,7 +821,7 @@
         
         // Seamlessly upgrade old local sessions to use the real backend
         if (!token && db.user) {
-          const guestRes = await fetch("http://localhost:3000/api/auth/guest", {
+          const guestRes = await fetch("/api/auth/guest", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: db.user.email, name: db.user.name })
@@ -834,7 +834,7 @@
         }
 
         if (token) {
-          const response = await fetch('http://localhost:3000/api/chat/message', {
+          const response = await fetch('/api/chat/message', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
