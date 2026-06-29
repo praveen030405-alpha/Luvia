@@ -369,7 +369,7 @@
           
           // Update button text
           var title = this.querySelector(".model-name").textContent;
-          dropdownBtn.querySelector("span").textContent = "Luvia " + title.split(" ")[1] || title;
+          dropdownBtn.querySelector("span").textContent = title;
           
           // Update real select if needed
           var realSelect = $("#modelSelect");
@@ -438,6 +438,39 @@
     });
 
     refs.chatInput.addEventListener("input", resizeComposer);
+
+    if (refs.voiceButton) {
+      refs.voiceButton.addEventListener("click", function() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          alert("Speech recognition is not supported in this browser.");
+          return;
+        }
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        
+        refs.voiceButton.style.color = "#ef4444"; // red indicating listening
+        
+        recognition.onresult = function(event) {
+          var speechResult = event.results[0][0].transcript;
+          refs.chatInput.value += (refs.chatInput.value ? " " : "") + speechResult;
+        };
+        
+        recognition.onspeechend = function() {
+          recognition.stop();
+          refs.voiceButton.style.color = "";
+        };
+        
+        recognition.onerror = function(event) {
+          console.error("Speech recognition error:", event.error);
+          refs.voiceButton.style.color = "";
+        };
+        
+        recognition.start();
+      });
+    }
 
     refs.attachMenuBtn.addEventListener("click", function (e) {
       refs.attachDropdown.classList.toggle("hidden");

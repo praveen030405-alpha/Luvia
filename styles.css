@@ -325,8 +325,9 @@ select:focus,
   z-index: 100;
   transform: translateX(-100%);
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(10, 12, 16, 0.92);
-  backdrop-filter: blur(40px);
+  background: rgba(20, 20, 30, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
@@ -539,11 +540,14 @@ select:focus,
 .model-dropdown-btn:hover { background: rgba(255, 255, 255, 0.05); }
 .model-dropdown-btn svg { width: 16px; height: 16px; }
 
+.model-dropdown-wrapper {
+  position: relative;
+}
+
 .model-dropdown-menu {
   position: absolute;
-  top: 52px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 40px;
+  left: 0;
   background: rgba(18, 20, 26, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 20px;

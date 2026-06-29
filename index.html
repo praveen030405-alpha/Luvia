@@ -98,11 +98,9 @@
       <main id="workspace" class="workspace">
         <aside class="sidebar" aria-label="Luvia navigation">
           <div class="sidebar-head">
-            <div class="brand-mark small" aria-hidden="true">
-              <svg class="luvia-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-            </div>
+            <div class="aurora-ball" style="width: 32px; height: 32px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #38f2d0, #a78bfa 50%, #f472b6); box-shadow: 0 0 15px rgba(167, 139, 250, 0.6), inset -2px -2px 6px rgba(0,0,0,0.4);" aria-hidden="true"></div>
             <div>
-              <div class="sidebar-title aurora-text">Luvia</div>
+              <div class="sidebar-title" style="font-weight: 600; font-size: 18px; color: #fff;">Zylo</div>
               <div class="sidebar-caption">Fusion brain</div>
             </div>
           </div>
@@ -143,13 +141,19 @@
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12" /><path d="m3 6 1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2" /></svg>
               </span>
-              <span>CA MCQs</span>
+              <span>Case Based MCQ's</span>
             </button>
             <button class="nav-item" type="button" data-view="gems">
               <span class="icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 3 3 9l9 12 9-12z" /><path d="M3 9h18M8 9l4 12 4-12" /></svg>
               </span>
               <span>Gems</span>
+            </button>
+            <button class="nav-item" type="button" data-view="settings">
+              <span class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </span>
+              <span>Settings</span>
             </button>
           </nav>
 
@@ -173,46 +177,52 @@
               <button id="sidebarToggle" class="icon-button" type="button" aria-label="Toggle sidebar">
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
               </button>
-              <div class="topbar-logo" style="display: flex; align-items: center; gap: 10px;">
-                <div class="aurora-ball" style="width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #38f2d0, #a78bfa 50%, #f472b6); box-shadow: 0 0 15px rgba(167, 139, 250, 0.6), inset -2px -2px 6px rgba(0,0,0,0.4);"></div>
-                <span class="logo-text" style="font-weight: 600; font-size: 16px; background: linear-gradient(90deg, #fff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Luvia Flash-Lite</span>
-              </div>
-            </div>
-            <div class="topbar-center">
-              <button id="modelDropdownBtn" class="model-dropdown-btn">
-                <span>Model</span>
-                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </button>
-              <div id="modelDropdownMenu" class="model-dropdown-menu hidden">
-                <button class="model-option active" data-value="fast">
-                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <div class="model-info">
-                    <div class="model-name">3.1 Flash-Lite</div>
-                    <div class="model-desc">Fastest answers</div>
+              <div class="topbar-logo" style="display: flex; align-items: center; gap: 12px; margin-left: 8px;">
+                <span class="logo-text" style="font-weight: 700; font-size: 20px; color: #a78bfa;">Zylo</span>
+                <div class="model-dropdown-wrapper">
+                  <button id="modelDropdownBtn" class="model-dropdown-btn">
+                    <span id="currentModelName" style="color: #e2e8f0; font-size: 18px; font-weight: 500;">3.1 Flash-Lite</span>
+                    <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" style="width:16px;height:16px;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                  <div id="modelDropdownMenu" class="model-dropdown-menu hidden" style="background:#111; border:1px solid #333; border-radius:12px; padding:8px; width:280px;">
+                    <button class="model-option active" data-value="fast" style="padding:12px; display:flex; align-items:center; gap:12px; border-radius:8px;">
+                      <svg class="check-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <div class="model-info">
+                        <div class="model-name" style="color:#fff; font-size:15px; font-weight:500;">3.1 Flash-Lite</div>
+                        <div class="model-desc" style="color:#94a3b8; font-size:13px;">Fastest answers</div>
+                      </div>
+                    </button>
+                    <button class="model-option" data-value="fusion" style="padding:12px; display:flex; align-items:center; gap:12px; border-radius:8px;">
+                      <svg class="check-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <div class="model-info">
+                        <div class="model-name" style="color:#fff; font-size:15px; font-weight:500;">3.5 Flash</div>
+                        <div class="model-desc" style="color:#94a3b8; font-size:13px;">All-around help</div>
+                      </div>
+                    </button>
+                    <button class="model-option" data-value="reasoning" style="padding:12px; display:flex; align-items:center; gap:12px; border-radius:8px;">
+                      <svg class="check-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <div class="model-info">
+                        <div class="model-name" style="color:#fff; font-size:15px; font-weight:500;">6.1 Ultra</div>
+                        <div class="model-desc" style="color:#94a3b8; font-size:13px;">Advanced maths and code</div>
+                      </div>
+                    </button>
+                    <button class="model-option" data-value="max" style="padding:12px; display:flex; align-items:center; gap:12px; border-radius:8px;">
+                      <svg class="check-icon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:none;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <div class="model-info">
+                        <div class="model-name" style="color:#fff; font-size:15px; font-weight:500;">Ultra Pro Max</div>
+                        <div class="model-desc" style="color:#94a3b8; font-size:13px;">Maximum reasoning & intelligence</div>
+                      </div>
+                    </button>
+                    <div class="dropdown-divider" style="margin:8px 0; border-top:1px solid #333;"></div>
+                    <button class="model-option no-check" data-value="ca" style="padding:12px; display:flex; align-items:center; justify-content:space-between; border-radius:8px;">
+                      <div class="model-info" style="margin-left:28px;">
+                        <div class="model-name" style="color:#fff; font-size:15px; font-weight:500;">Thinking level</div>
+                      </div>
+                      <svg class="chevron-right" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#94a3b8;fill:none;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    <select id="modelSelect" class="hidden"><option value="fast"></option><option value="fusion"></option><option value="reasoning"></option><option value="max"></option><option value="ca"></option></select>
                   </div>
-                </button>
-                <button class="model-option" data-value="fusion">
-                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <div class="model-info">
-                    <div class="model-name">3.5 Flash</div>
-                    <div class="model-desc">All-around help</div>
-                  </div>
-                </button>
-                <button class="model-option" data-value="reasoning">
-                  <svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <div class="model-info">
-                    <div class="model-name">3.1 Pro</div>
-                    <div class="model-desc">Advanced maths and code</div>
-                  </div>
-                </button>
-                <div class="dropdown-divider"></div>
-                <button class="model-option no-check" data-value="ca">
-                  <div class="model-info">
-                    <div class="model-name">Thinking level</div>
-                  </div>
-                  <svg class="chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-                <select id="modelSelect" class="hidden"><option value="fast"></option><option value="fusion"></option><option value="reasoning"></option><option value="ca"></option></select>
+                </div>
               </div>
             </div>
             <div class="topbar-right">
@@ -279,8 +289,67 @@
             <div style="padding: 60px 20px; color: white;">Image Generator</div>
           </section>
           <section id="mcqView" class="view glass-modal" aria-label="CA MCQ workspace">
-            <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <div style="padding: 60px 20px; color: white;">CA MCQs</div>
+            <div class="mcq-header" style="display:flex; justify-content:space-between; align-items:center; padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <div style="display:flex; align-items:center; gap: 16px;">
+                <div style="width:48px; height:48px; border-radius:12px; background:rgba(167, 139, 250, 0.15); display:flex; align-items:center; justify-content:center;">
+                  <svg viewBox="0 0 24 24" style="width:24px; height:24px; stroke:#a78bfa; fill:none;"><path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m14-6h2m-2 6h2M7 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2zM9 9h6v6H9z"></path></svg>
+                </div>
+                <div>
+                  <h2 style="margin:0; font-size:24px; color:#fff; font-weight:600;">MCQ Quiz Mode</h2>
+                  <div style="color:#94a3b8; font-size:14px; margin-top:4px;">Auto-graded with Timer</div>
+                </div>
+              </div>
+              <button class="close-modal-btn icon-button" data-view="chat" style="background:rgba(255,255,255,0.05); border-radius:50%; width:40px; height:40px;"><svg viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 48px; padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:600; font-size:14px; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px;">
+                  <svg viewBox="0 0 24 24" style="width:16px; height:16px; stroke:currentColor; fill:none;"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+                  Choose Subject
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <button class="subject-btn" style="background:rgba(59, 130, 246, 0.1); border:1px solid rgba(59, 130, 246, 0.5); padding:16px 20px; border-radius:12px; color:#60a5fa; font-size:16px; font-weight:600; text-align:left;">Paper 1: Advanced Accounting</button>
+                  <button class="subject-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px 20px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600; text-align:left;">Paper 2: Corporate and Other Laws</button>
+                  <button class="subject-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px 20px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600; text-align:left; display:flex; justify-content:space-between;">Paper 3: Taxation <svg viewBox="0 0 24 24" style="width:16px; height:16px; stroke:#94a3b8; fill:none;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                  <button class="subject-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px 20px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600; text-align:left;">Paper 4: Cost and Management Accounting</button>
+                  <button class="subject-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px 20px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600; text-align:left;">Paper 5: Auditing and Ethics</button>
+                  <button class="subject-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px 20px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600; text-align:left; display:flex; justify-content:space-between;">Paper 6: FM & SM <svg viewBox="0 0 24 24" style="width:16px; height:16px; stroke:#94a3b8; fill:none;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                </div>
+              </div>
+              
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:600; font-size:14px; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px;">
+                  <svg viewBox="0 0 24 24" style="width:16px; height:16px; stroke:currentColor; fill:none;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Select Timer
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-bottom:12px;">
+                  <button class="timer-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">10 Mins</button>
+                  <button class="timer-btn" style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.5); padding:16px; border-radius:12px; color:#34d399; font-size:16px; font-weight:600;">15 Mins</button>
+                  <button class="timer-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">20 Mins</button>
+                  <button class="timer-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">30 Mins</button>
+                  <button class="timer-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">45 Mins</button>
+                </div>
+                <div style="color:#64748b; font-size:14px; margin-bottom:48px;">2 Case Scenarios -> 4 MCQs each</div>
+                
+                <div style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-weight:600; font-size:14px; margin-bottom:16px; text-transform:uppercase; letter-spacing:1px;">
+                  <svg viewBox="0 0 24 24" style="width:16px; height:16px; stroke:currentColor; fill:none;"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                  Difficulty Level
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
+                  <button class="diff-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">Easy</button>
+                  <button class="diff-btn" style="background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.5); padding:16px; border-radius:12px; color:#fbbf24; font-size:16px; font-weight:600;">Medium</button>
+                  <button class="diff-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:12px; color:#e2e8f0; font-size:16px; font-weight:600;">ICAI Level</button>
+                </div>
+              </div>
+            </div>
+            
+            <div style="margin-top:auto; padding:24px 32px; border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:flex-end;">
+              <button id="startQuizBtn" style="background:linear-gradient(90deg, #6366f1, #a855f7); border:none; padding:16px 32px; border-radius:999px; color:#fff; font-size:18px; font-weight:600; display:flex; align-items:center; gap:12px; cursor:pointer;">
+                Start Quiz Mode 
+                <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:#fff;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+            </div>
           </section>
           <section id="gemsView" class="view glass-modal" aria-label="Specialized assistant workspace">
             <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -289,6 +358,13 @@
           <section id="accountView" class="view glass-modal" aria-label="Account workspace">
             <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             <div style="padding: 60px 20px; color: white;">Account Settings</div>
+          </section>
+          <section id="settingsView" class="view glass-modal" aria-label="Settings workspace">
+            <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <div style="padding: 60px 20px; color: white;">
+              <h2>Settings</h2>
+              <p>System configuration coming soon.</p>
+            </div>
           </section>
           <section id="cameraView" class="view glass-modal" aria-label="Camera workspace">
             <button class="close-modal-btn icon-button" data-view="chat" style="position:absolute; top:20px; right:20px; z-index:1001;"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
