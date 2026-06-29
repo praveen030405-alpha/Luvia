@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <!-- <script src="https://accounts.google.com/gsi/client"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -41,7 +41,7 @@
     </div>
 
     <div id="app" class="app-root">
-      <section id="authScreen" class="auth-screen">
+      <section id="authScreen" class="auth-screen hidden">
         <div class="auth-panel liquid-panel">
           <div class="auth-brand">
             <div class="brand-mark" aria-hidden="true">
@@ -95,7 +95,7 @@
         </div>
       </section>
 
-      <main id="workspace" class="workspace hidden">
+      <main id="workspace" class="workspace">
         <aside class="sidebar" aria-label="Luvia navigation">
           <div class="sidebar-head">
             <div class="brand-mark small" aria-hidden="true">
