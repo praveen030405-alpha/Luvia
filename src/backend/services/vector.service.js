@@ -2,7 +2,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class VectorService {
   constructor() {
-    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key');
     // Using text-embedding-004 which is the latest standard, or gemini-embedding-001
     this.embeddingModel = this.gemini.getGenerativeModel({ model: 'text-embedding-004' });
     this.store = [];
