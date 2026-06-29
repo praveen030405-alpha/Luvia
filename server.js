@@ -6,9 +6,7 @@ const rateLimit = require('express-rate-limit');
 // Import Routes
 const authRoutes = require('./src/backend/routes/auth');
 const chatRoutes = require('./src/backend/routes/chat');
-const gemRoutes = require('./src/backend/routes/gems');
-const workspaceRoutes = require('./src/backend/routes/workspace');
-
+// Other routes removed for prototype
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -52,8 +50,7 @@ const caSyllabus = require('./src/backend/data/ca_syllabus_mock');
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/gems', gemRoutes);
-app.use('/api/workspace', workspaceRoutes);
+// Unused routes removed for prototype
 
 // Fallback for frontend routing (if using SPA)
 app.use((req, res) => {
