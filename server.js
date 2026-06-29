@@ -88,8 +88,8 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong on the server: ' + err.message, stack: err.stack });
+  console.error(err);
+  res.status(500).json({ error: 'Something went wrong on the server.' });
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -97,6 +97,11 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 Luvia server running on http://localhost:${PORT}`);
   });
 }
+
+// Catch unhandled rejections to prevent Vercel from crashing completely
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 // Export for Vercel Serverless
 module.exports = app;
