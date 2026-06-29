@@ -47,7 +47,10 @@ router.post('/google', async (req, res) => {
 router.post('/guest', async (req, res) => {
   try {
     const { email, name } = req.body;
+    console.log('Guest login attempt for:', email);
+    console.log('Finding user...');
     let user = await User.findOne({ email });
+    console.log('User found:', !!user);
     if (!user) {
       user = new User({ email, name, googleId: 'guest-' + Date.now() });
       await user.save();
@@ -57,9 +60,11 @@ router.post('/guest', async (req, res) => {
       process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: '7d' }
     );
+    console.log('Guest session created successfully');
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch(err) {
-    res.status(500).json({ error: 'Failed to create guest session' });
+    console.error('Guest route error:', err);
+    res.status(500).json({ error: 'Failed to create guest session', details: err.message });
   }
 });
 
