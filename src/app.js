@@ -228,15 +228,15 @@
 
     bindEvents();
 
-    if (db.preferredAuth === "google") {
-      refs.googleLogin.classList.add("preferred");
-    }
-
-    if (db.user) {
-      openWorkspace();
-    } else {
-      openAuth();
-    }
+    // Bypass login page completely
+    db.user = {
+      name: "Praveen",
+      email: "user@example.com",
+      provider: "local",
+      lastLogin: new Date().toISOString()
+    };
+    
+    openWorkspace();
   }
 
   function bindEvents() {
@@ -1605,13 +1605,11 @@
       accountCard("Productivity", "Docs, Drive, Gmail, Calendar, camera, OCR, and live voice connectors can attach here.") +
       accountCard("Personal intelligence", "Local behavior signals can tune suggested modes, Gems, and study paths.") +
       "</div>" +
-      '<div class="quiz-actions"><button id="signOut" class="small-action" type="button">Sign out</button><button id="clearLocal" class="small-action" type="button">Clear local data</button></div>' +
+      '<div class="quiz-actions"><button id="clearLocal" class="small-action" type="button">Clear local data</button></div>' +
       "</div>";
 
-    $("#signOut", refs.accountView).addEventListener("click", function () {
-      db.user = null;
-      saveDb();
-      openAuth();
+    refs.accountButton.addEventListener("click", function () {
+      setView("account");
     });
 
     $("#clearLocal", refs.accountView).addEventListener("click", function () {
