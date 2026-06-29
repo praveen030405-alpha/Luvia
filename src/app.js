@@ -373,12 +373,11 @@
           var title = this.querySelector(".model-name").textContent;
           dropdownBtn.querySelector("span").textContent = title;
           
-          // Update real select if needed
+          // Update selected model everywhere the app reads it.
           var realSelect = $("#modelSelect");
-          if (realSelect) {
-            realSelect.value = this.dataset.value;
-            state.modelMode = this.dataset.value;
-          }
+          db.settings.modelMode = this.dataset.value;
+          if (realSelect) realSelect.value = this.dataset.value;
+          saveDb();
           
           dropdownMenu.classList.add("hidden");
         });
@@ -392,7 +391,8 @@
       saveDb();
       renderAll();
       refs.chatInput.focus();
-      document.getElementById('sidebar').classList.remove('open');
+      var sidebar = $(".sidebar");
+      if (sidebar) sidebar.classList.remove("open");
     });
 
     refs.searchToggle.addEventListener("click", function () {
@@ -460,15 +460,11 @@
 
     refs.cameraButton.addEventListener("click", function () {
       refs.attachDropdown.classList.add("hidden");
-      alert("Camera API would launch here.");
+      setView("camera");
     });
 
     refs.fileInput.addEventListener("change", handleFileAttachment);
     refs.voiceButton.addEventListener("click", startVoiceInput);
-    
-    if (refs.cameraButton) {
-      refs.cameraButton.addEventListener("click", startLiveVision);
-    }
     
     $all(".method-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {
@@ -613,10 +609,12 @@
       provider: user.provider,
       lastLogin: new Date().toISOString()
     };
-    // Always start a fresh session — clear all old chats
-    db.chats = [];
-    var chat = createChat("New Session");
-    state.activeChatId = chat.id;
+    if (!db.chats.length) {
+      var chat = createChat("New Session");
+      state.activeChatId = chat.id;
+    } else if (!state.activeChatId) {
+      state.activeChatId = db.chats[0].id;
+    }
     saveDb();
     openWorkspace();
   }
@@ -630,16 +628,35 @@
   function openWorkspace() {
     refs.authScreen.classList.add("hidden");
     refs.workspace.classList.remove("hidden");
-    if (refs.modelSelect) {
-      refs.modelSelect.value = db.settings.modelMode || "fusion";
+    if (!db.chats.length) {
+      var freshChat = createChat("New Session");
+      state.activeChatId = freshChat.id;
     }
-    // Always start with a fresh empty chat to show the greeting
-    db.chats = [];
-    var freshChat = createChat("New Session");
-    state.activeChatId = freshChat.id;
-    saveDb();
     ensureChat();
+    saveDb();
+    syncModelDropdown();
     renderAll();
+  }
+
+  function syncModelDropdown() {
+    var mode = db.settings.modelMode || "fusion";
+    if (refs.modelSelect) refs.modelSelect.value = mode;
+    var dropdownMenu = $("#modelDropdownMenu");
+    var dropdownBtn = $("#modelDropdownBtn");
+    if (!dropdownMenu || !dropdownBtn) return;
+
+    $all(".model-option", dropdownMenu).forEach(function (option) {
+      var active = option.dataset.value === mode;
+      option.classList.toggle("active", active);
+      var check = option.querySelector(".check-icon");
+      if (check && !option.classList.contains("no-check")) {
+        check.style.stroke = active ? "#fff" : "none";
+      }
+      if (active) {
+        var label = option.querySelector(".model-name");
+        if (label) dropdownBtn.querySelector("span").textContent = label.textContent;
+      }
+    });
   }
 
   function createChat(title) {
@@ -976,46 +993,53 @@
 
           const reader = response.body.getReader();
           const decoder = new TextDecoder("utf-8");
+          var sseBuffer = "";
+
+          function renderStreamingMessage() {
+            var contentHtml = escapeHtml(newMsg.content);
+            if (typeof marked !== 'undefined') {
+              try { contentHtml = DOMPurify.sanitize(marked.parse(newMsg.content)); } catch(e) {}
+            }
+            var contentDiv = targetArticle.querySelector('.message-content');
+            if (contentDiv) {
+              contentDiv.innerHTML = contentHtml;
+            } else {
+              targetArticle.innerHTML = '<div class="message-content markdown-body">' + contentHtml + '</div>';
+            }
+            refs.messageStream.scrollTop = refs.messageStream.scrollHeight;
+          }
+
+          function handleSsePayload(payload) {
+            if (!payload.trim()) return;
+            var line = payload.split(/\r?\n/).find(function (item) {
+              return item.indexOf('data: ') === 0;
+            });
+            if (!line) return;
+            const dataObj = JSON.parse(line.slice(6));
+            if (dataObj.type === 'init') {
+              chat._id = dataObj.chatId;
+            } else if (dataObj.type === 'chunk') {
+              newMsg.content += dataObj.text || "";
+              renderStreamingMessage();
+            } else if (dataObj.type === 'done') {
+              delete newMsg.isTyping;
+              chat.updatedAt = new Date().toISOString();
+              saveDb();
+              renderAll();
+            } else if (dataObj.type === 'error') {
+              throw new Error(dataObj.message || "Stream failed");
+            }
+          }
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
-            
-            for (let line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const dataObj = JSON.parse(line.slice(6));
-                  if (dataObj.type === 'init') {
-                    chat._id = dataObj.chatId;
-                  } else if (dataObj.type === 'chunk') {
-                    newMsg.content += dataObj.text;
-                    
-                    var contentHtml = escapeHtml(newMsg.content);
-                    if (typeof marked !== 'undefined') {
-                      try { contentHtml = DOMPurify.sanitize(marked.parse(newMsg.content)); } catch(e) {}
-                    }
-                    var contentDiv = targetArticle.querySelector('.message-content');
-                    if (contentDiv) {
-                      contentDiv.innerHTML = contentHtml;
-                    } else {
-                      targetArticle.innerHTML = '<div class="message-content markdown-body">' + contentHtml + '</div>';
-                    }
-                    refs.messageStream.scrollTop = refs.messageStream.scrollHeight;
-                  } else if (dataObj.type === 'done') {
-                    delete newMsg.isTyping;
-                    chat.updatedAt = new Date().toISOString();
-                    saveDb();
-                    renderAll(); // Final render to apply KaTeX and highlight.js properly
-                  } else if (dataObj.type === 'error') {
-                    console.error("Stream AI error:", dataObj.message);
-                  }
-                } catch(e) {}
-              }
-            }
+            sseBuffer += decoder.decode(value, { stream: true });
+            var payloads = sseBuffer.split(/(?:\r?\n){2}/);
+            sseBuffer = payloads.pop() || "";
+            payloads.forEach(handleSsePayload);
           }
+          if (sseBuffer.trim()) handleSsePayload(sseBuffer);
           return; // Stream handled it all
         } else {
           chat.messages.push({
