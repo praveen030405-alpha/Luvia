@@ -71,6 +71,40 @@ class AIService {
       throw error;
     }
   }
+
+  async generateStream(messages, mode = 'fusion', systemInstruction = '') {
+    try {
+      const chatHistory = messages.map(msg => ({
+        content: msg.content,
+        role: msg.role === 'assistant' ? 'assistant' : 'user'
+      }));
+      const userQuery = chatHistory.pop().content;
+      const memory = new ChatMemoryBuffer({ tokenLimit: 4000, chatHistory });
+
+      if (mode === 'ca') {
+        const vectorService = require('./vector.service');
+        const relevantDocs = await vectorService.search(userQuery, 2);
+        let retrievedContext = '';
+        if (relevantDocs.length > 0) {
+          retrievedContext = '\n\nVerified Reference Material:\n' + relevantDocs.map(d => `- [${d.metadata.source || 'Doc'}]: ${d.text}`).join('\n');
+        }
+        const caInstruction = "You are an expert in the Chartered Accountant (CA) syllabus. Use the provided Verified Reference Material to answer the user's question accurately. " + systemInstruction + retrievedContext;
+        
+        const caEngine = new SimpleChatEngine({
+          memory,
+          llm: new Gemini({ apiKey: this.apiKey, model: 'models/gemini-2.5-flash' })
+        });
+        
+        return await caEngine.chat({ message: caInstruction + "\n\nUser Question: " + userQuery, stream: true });
+      } else {
+        const chatEngine = new SimpleChatEngine({ memory });
+        return await chatEngine.chat({ message: userQuery, stream: true });
+      }
+    } catch (error) {
+      console.error('AI Stream Error:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new AIService();

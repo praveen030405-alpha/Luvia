@@ -894,7 +894,7 @@
         }
 
         if (token) {
-          const response = await fetch('/api/chat/message', {
+          const response = await fetch('/api/chat/stream', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -906,34 +906,70 @@
               mode: db.settings.modelMode || "fusion"
             })
           });
-          const data = await response.json();
-          if (data.message) {
-            chat._id = data.chatId; // Store backend ID
-            var newMsg = {
-              id: uid("msg"),
-              role: "assistant",
-              content: "", // Start empty
-              createdAt: new Date().toISOString(),
-              meta: modelLabel(db.settings.modelMode || "fusion"),
-              isTyping: true
-            };
-            chat.messages.push(newMsg);
-            saveDb();
-            setThinking(false);
-            renderAll(); // Renders empty message container
-            
-            // Start typewriter effect
-            typeWriter(newMsg, data.message.content, chat);
-            return; // typeWriter will handle the final save and render
-          } else if (data.error) {
-            chat.messages.push({
-              id: uid("msg"),
-              role: "assistant",
-              content: "Error: " + data.error + (data.details ? "\n" + data.details : ""),
-              createdAt: new Date().toISOString(),
-              meta: "System"
-            });
+
+          if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
           }
+
+          var newMsg = {
+            id: uid("msg"),
+            role: "assistant",
+            content: "", // Start empty
+            createdAt: new Date().toISOString(),
+            meta: modelLabel(db.settings.modelMode || "fusion"),
+            isTyping: true
+          };
+          chat.messages.push(newMsg);
+          saveDb();
+          setThinking(false);
+          renderAll(); // Renders empty message container
+
+          var articles = refs.messageStream.querySelectorAll("article.assistant");
+          var targetArticle = articles[articles.length - 1];
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+            
+            for (let line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const dataObj = JSON.parse(line.slice(6));
+                  if (dataObj.type === 'init') {
+                    chat._id = dataObj.chatId;
+                  } else if (dataObj.type === 'chunk') {
+                    newMsg.content += dataObj.text;
+                    
+                    var contentHtml = escapeHtml(newMsg.content);
+                    if (typeof marked !== 'undefined') {
+                      try { contentHtml = DOMPurify.sanitize(marked.parse(newMsg.content)); } catch(e) {}
+                    }
+                    var contentDiv = targetArticle.querySelector('.message-content');
+                    if (contentDiv) {
+                      contentDiv.innerHTML = contentHtml;
+                    } else {
+                      targetArticle.innerHTML = '<div class="message-content markdown-body">' + contentHtml + '</div>';
+                    }
+                    refs.messageStream.scrollTop = refs.messageStream.scrollHeight;
+                  } else if (dataObj.type === 'done') {
+                    delete newMsg.isTyping;
+                    chat.updatedAt = new Date().toISOString();
+                    saveDb();
+                    renderAll(); // Final render to apply KaTeX and highlight.js properly
+                  } else if (dataObj.type === 'error') {
+                    console.error("Stream AI error:", dataObj.message);
+                  }
+                } catch(e) {}
+              }
+            }
+          }
+          return; // Stream handled it all
         } else {
           chat.messages.push({
             id: uid("msg"),
@@ -942,6 +978,10 @@
             createdAt: new Date().toISOString(),
             meta: "System"
           });
+          chat.updatedAt = new Date().toISOString();
+          saveDb();
+          setThinking(false);
+          renderAll();
         }
       } catch(err) {
         console.error("Backend fetch error:", err);
@@ -952,11 +992,11 @@
           createdAt: new Date().toISOString(),
           meta: "System"
         });
+        chat.updatedAt = new Date().toISOString();
+        saveDb();
+        setThinking(false);
+        renderAll();
       }
-      chat.updatedAt = new Date().toISOString();
-      saveDb();
-      setThinking(false);
-      renderAll();
     }, 100);
   }
 
